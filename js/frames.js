@@ -5,8 +5,9 @@
 //  - 칸 위에 걸쳐 있는 장식(테이프·클로버·캐릭터 등)은 사진 위로 올라온다.
 // =============================================================
 
-// /api/frames 를 쓸 수 없을 때(정적 열람 등) 사용할 기본 목록
-const FRAME_FALLBACK = ['frame/frame1.png'];
+// 서버 없이(정적 호스팅·file://) 열렸을 때 읽는 목록.
+// frame/names.json 의 키 순서가 그대로 프레임 순서가 된다.
+const FRAME_LIST_FALLBACK = 'frame/names.json';
 
 // 사진 칸 판별 기준
 const WIN_WHITE = 244;        // 이 값보다 밝으면 '흰 칸' 후보
@@ -20,17 +21,8 @@ function getFrame(id) {
 
 // --- 목록 불러오기 ------------------------------------------------
 async function loadFrames() {
-    let list = [];
-    try {
-        const res = await fetch('api/frames', { cache: 'no-store' });
-        if (res.ok) {
-            const json = await res.json();
-            if (Array.isArray(json.frames)) list = json.frames;
-        }
-    } catch (err) {
-        console.warn('[frames] /api/frames 사용 불가 — 기본 목록으로 진행', err);
-    }
-    if (!list.length) list = FRAME_FALLBACK.map(url => ({ url, name: frameNameFromUrl(url) }));
+    let list = await fetchFrameList();
+    if (!list.length) list = await fetchStaticFrameList();
 
     const loaded = [];
     for (const item of list) {
@@ -42,6 +34,36 @@ async function loadFrames() {
     }
     FRAMES = loaded;
     return FRAMES;
+}
+
+// server.js 가 있으면 폴더를 그대로 읽어온다
+async function fetchFrameList() {
+    try {
+        const res = await fetch('api/frames', { cache: 'no-store' });
+        if (!res.ok) return [];
+        const json = await res.json();
+        return Array.isArray(json.frames) ? json.frames : [];
+    } catch (err) {
+        console.warn('[frames] /api/frames 사용 불가 — names.json 으로 진행', err);
+        return [];
+    }
+}
+
+// 정적 호스팅(Vercel 등)에서는 폴더를 읽을 수 없으니 names.json 을 목록으로 쓴다
+async function fetchStaticFrameList() {
+    try {
+        const res = await fetch(FRAME_LIST_FALLBACK, { cache: 'no-store' });
+        if (!res.ok) return [];
+        const names = await res.json();
+        return Object.keys(names).map(file => ({
+            file,
+            url: 'frame/' + encodeURIComponent(file),
+            name: names[file] || frameNameFromUrl(file)
+        }));
+    } catch (err) {
+        console.error('[frames] 프레임 목록을 읽지 못했습니다', err);
+        return [];
+    }
 }
 
 function frameNameFromUrl(url) {

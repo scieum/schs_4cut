@@ -29,6 +29,8 @@ frame/
 ```
 
 `names.json` 이 없으면 파일 이름이 그대로 프레임 이름이 됩니다.
+`server.js` 없이 정적으로 호스팅할 때는 **`names.json` 이 곧 프레임 목록**이 되므로
+(폴더를 읽을 수 없기 때문에) 이 경우엔 파일을 추가할 때 `names.json` 에도 한 줄 넣어야 합니다.
 
 ### PNG 만드는 법
 
@@ -112,6 +114,13 @@ upload: {
 
 `mode: 'auto'` (기본값)면 로컬 서버 → Cloudinary → imgbb 순으로 시도합니다.
 `mode: 'off'` 면 QR 없이 "이 기기에 저장" 버튼만 씁니다.
+
+### 정적 호스팅 (Vercel 등)
+
+`upload.mode` 를 `'cloudinary'` 로 두면 **서버 없이 정적 파일만 올려도** 전부 동작합니다.
+프레임 목록은 `frame/names.json` 에서 읽고, 사진은 Cloudinary로 올라가고,
+호스팅이 주는 HTTPS 덕분에 아이패드·휴대폰에서도 카메라가 켜집니다.
+이때 `server.js` 와 `uploads/` 는 쓰이지 않습니다.
 
 ---
 

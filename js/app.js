@@ -102,6 +102,14 @@ function chooseFrame(id) {
 }
 
 // ===== STEP 2 · 포토부스 =====
+// 촬영 가이드(어두운 테두리)를 실제 촬영 비율에 맞춘다
+function applyShotRatio() {
+    const stage = document.getElementById('pbStage');
+    const slot = state.frame && state.frame.slots[0];
+    if (!stage || !slot) return;
+    stage.style.setProperty('--shot-ratio', `${slot.w} / ${slot.h}`);
+}
+
 function updateSidePreview() {
     const compact = window.matchMedia('(max-width: 900px)').matches;
     // 8장을 찍은 뒤 고르는 방식이라, 촬영 중에는 프레임 모양만 보여준다.
@@ -132,6 +140,7 @@ function toast(msg, ms) {
 
 async function initPhotoBooth() {
     state.video = document.getElementById('cameraVideo');
+    applyShotRatio();
     resetShots();
     hidePbError();
 
@@ -522,10 +531,15 @@ function setQrStatus(text, opts) {
     const o = opts || {};
     const status = document.getElementById('qrStatus');
     const statusText = document.getElementById('qrStatusText');
+    const detailEl = document.getElementById('qrDetail');
     status.hidden = false;
     status.classList.toggle('is-error', !!o.error);
     status.querySelector('.spinner').hidden = !o.loading;
     statusText.textContent = text;
+
+    // 원인을 화면에도 남겨둬야 부스에서 바로 확인할 수 있다
+    detailEl.textContent = o.detail || '';
+    detailEl.hidden = !o.detail;
 }
 
 async function shareViaQR() {
@@ -563,7 +577,7 @@ async function shareViaQR() {
         document.getElementById('qrStatus').hidden = true;
     } catch (err) {
         console.error('[upload]', err);
-        setQrStatus(uploadErrorMessage(err), { error: true });
+        setQrStatus(uploadErrorMessage(err), { error: true, detail: errorDetail(err) });
         retryEl.hidden = false;
     }
 }
@@ -585,6 +599,11 @@ function uploadErrorMessage(err) {
         return '사진 서버에 연결하지 못했어요. Wi-Fi와 server.js 실행 상태를 확인해 주세요.';
     }
     return '사진 서버에 올리지 못했어요. "이 기기에 저장"으로 받아주세요.';
+}
+
+function errorDetail(err) {
+    const msg = String((err && err.message) || err || '');
+    return msg ? `${msg} · ${location.origin}` : '';
 }
 
 async function uploadResult(blob, mode) {
