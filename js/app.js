@@ -21,93 +21,11 @@ const state = {
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
     window.scrollTo(0, 0);
-    if (id === 'intro') enterIntro();
-    else stopIntroRotation();
 }
 
-function goToIntro() {
+// 첫 화면이 곧 프레임 선택 화면이다.
+function goHome() {
     stopCamera();
-    showScreen('intro');
-}
-
-// ===== 인트로 · 대기 화면 =====
-// 아무도 안 쓰는 동안 프레임 4종을 천천히 돌려 보여준다.
-const INTRO_ROTATE_MS = 3200;
-const introState = { index: 0, timer: null, canvases: [] };
-
-function enterIntro() {
-    state.dateText = todayText();
-    const dateEl = document.getElementById('introDate');
-    if (dateEl) dateEl.textContent = state.dateText;
-    buildIntroShowcase();
-    startIntroRotation();
-}
-
-function buildIntroShowcase() {
-    const stage = document.getElementById('introStage');
-    const dots = document.getElementById('introDots');
-    if (!stage || !dots) return;
-
-    stage.innerHTML = '';
-    dots.innerHTML = '';
-    introState.canvases = [];
-
-    const box = stage.getBoundingClientRect();
-    const maxW = Math.max(120, box.width - 40);
-    const maxH = Math.max(160, box.height - 40);
-
-    FRAMES.forEach((frame, i) => {
-        const cv = document.createElement('canvas');
-        cv.setAttribute('aria-hidden', 'true');
-        stage.appendChild(cv);
-        renderFramePreview(cv, frame, null, { maxW, maxH, dateText: state.dateText });
-        introState.canvases.push(cv);
-
-        const dot = document.createElement('button');
-        dot.type = 'button';
-        dot.setAttribute('aria-label', frame.name + ' 미리보기');
-        dot.onclick = e => {
-            e.stopPropagation();           // 점만 눌렀을 때는 시작되지 않게
-            showIntroFrame(i);
-            startIntroRotation();
-        };
-        dots.appendChild(dot);
-    });
-
-    const countEl = document.getElementById('introFrameCount');
-    if (countEl) countEl.textContent = FRAMES.length;
-
-    showIntroFrame(Math.min(introState.index, FRAMES.length - 1));
-}
-
-function showIntroFrame(i) {
-    introState.index = i;
-    introState.canvases.forEach((cv, n) => cv.classList.toggle('is-active', n === i));
-    document.querySelectorAll('#introDots button')
-        .forEach((d, n) => d.classList.toggle('is-active', n === i));
-    const nameEl = document.getElementById('introFrameName');
-    if (nameEl && FRAMES[i]) nameEl.textContent = FRAMES[i].name;
-}
-
-function startIntroRotation() {
-    stopIntroRotation();
-    if (FRAMES.length < 2) return;
-    introState.timer = setInterval(() => {
-        showIntroFrame((introState.index + 1) % FRAMES.length);
-    }, INTRO_ROTATE_MS);
-}
-
-function stopIntroRotation() {
-    clearInterval(introState.timer);
-    introState.timer = null;
-}
-
-// 버튼이든 배경이든, 인트로 어디를 눌러도 시작
-function startFromIntro(e) {
-    const intro = document.getElementById('intro');
-    if (!intro || !intro.classList.contains('active')) return;
-    if (e && e.target.closest('.intro-dots')) return;
-    stopIntroRotation();
     goToFrameChoice();
 }
 
@@ -115,6 +33,8 @@ function startFromIntro(e) {
 function renderFrameChoices() {
     const grid = document.getElementById('choiceGrid');
     grid.innerHTML = '';
+
+    const pending = [];
 
     FRAMES.forEach(frame => {
         const card = document.createElement('button');
@@ -136,15 +56,28 @@ function renderFrameChoices() {
         card.appendChild(wrap);
         card.appendChild(meta);
         grid.appendChild(card);
+        pending.push({ cv, frame, wrap });
+    });
 
-        renderFramePreview(cv, frame, null, { maxW: 300, maxH: 340, dateText: state.dateText });
+    // 매트(.choice-preview)에 실제로 남는 공간을 재서 세로형·직사각형이
+    // 같은 칸 안에 나란히 들어가게 한다.
+    pending.forEach(({ cv, frame, wrap }) => {
+        const box = wrap.getBoundingClientRect();
+        const pad = 32;
+        renderFramePreview(cv, frame, null, {
+            maxW: Math.max(80, box.width - pad),
+            maxH: Math.max(80, box.height - pad),
+            dateText: state.dateText
+        });
     });
 }
 
 function goToFrameChoice() {
     state.dateText = todayText();
+    const dateEl = document.getElementById('todayDate');
+    if (dateEl) dateEl.textContent = state.dateText;
     renderFrameChoices();
-    showScreen('frameChoice');
+    showScreen('home');
 }
 
 function chooseFrame(id) {
@@ -402,7 +335,7 @@ function exitPhotoBooth() {
     state.aborted = true;
     state.shooting = false;
     stopCamera();
-    showScreen('intro');
+    goHome();
 }
 
 function stopCamera() {
@@ -456,10 +389,10 @@ function retakePhotos() {
     initPhotoBooth();
 }
 
-function exitToIntro() {
+function exitToHome() {
     state.shareUrl = null;
     stopCamera();
-    showScreen('intro');
+    goHome();
 }
 
 // --- 업로드 → QR ---
@@ -607,8 +540,7 @@ function drawQR(canvas, text) {
 
 // ===== 시작 =====
 document.addEventListener('DOMContentLoaded', () => {
-    state.dateText = todayText();
-    if (document.getElementById('intro').classList.contains('active')) enterIntro();
+    goToFrameChoice();
 });
 
 window.addEventListener('resize', () => {
@@ -616,9 +548,7 @@ window.addEventListener('resize', () => {
     window.__previewResizeTimer = setTimeout(() => {
         const booth = document.getElementById('photobooth');
         if (booth && booth.classList.contains('active')) updateSidePreview();
-        const choice = document.getElementById('frameChoice');
-        if (choice && choice.classList.contains('active')) renderFrameChoices();
-        const intro = document.getElementById('intro');
-        if (intro && intro.classList.contains('active')) buildIntroShowcase();
+        const home = document.getElementById('home');
+        if (home && home.classList.contains('active')) renderFrameChoices();
     }, 200);
 });

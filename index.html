@@ -3,44 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0b0d12">
+    <meta name="theme-color" content="#ffffff">
     <title>속초고등학교 인생네컷</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0c11'/%3E%3Crect x='8' y='5' width='16' height='22' rx='2' fill='%23fff'/%3E%3Crect x='10' y='7' width='12' height='7' rx='1' fill='%232f7cf6'/%3E%3Crect x='10' y='15' width='12' height='7' rx='1' fill='%2316b8cd'/%3E%3C/svg%3E">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23ffffff'/%3E%3Crect x='8' y='5' width='16' height='22' rx='2' fill='%23ffffff' stroke='rgba(0,0,0,0.1)'/%3E%3Crect x='10' y='7' width='12' height='7' rx='1' fill='%230075de'/%3E%3Crect x='10' y='15' width='12' height='7' rx='1' fill='%230075de'/%3E%3C/svg%3E">
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<!-- ══════════════ 인트로 ══════════════ -->
-<section id="intro" class="screen active" onclick="startFromIntro(event)">
-    <div class="intro-top">
-        <span class="intro-mark">SOKCHO HIGH SCHOOL</span>
-        <span class="intro-date" id="introDate"></span>
-    </div>
+<!-- ══════════════ 홈 = STEP 1 · 프레임 선택 ══════════════ -->
+<section id="home" class="screen active">
+    <header class="topbar">
+        <span class="brand-mark">SOKCHO HIGH SCHOOL</span>
+        <span class="brand-date" id="todayDate"></span>
+    </header>
 
-    <div class="intro-inner">
-        <div class="intro-copy">
-            <h1 class="intro-title">속초고등학교<br><em>인생네컷</em></h1>
-            <button class="btn btn-primary btn-start" onclick="startFromIntro(event)">
-                시작하기<span class="btn-arrow" aria-hidden="true">→</span>
-            </button>
-        </div>
-
-        <div class="intro-showcase">
-            <div class="intro-stage" id="introStage"></div>
-            <p class="intro-frame-name" id="introFrameName"></p>
-            <div class="intro-dots" id="introDots"></div>
-        </div>
-    </div>
-</section>
-
-<!-- ══════════════ 프레임 선택 ══════════════ -->
-<section id="frameChoice" class="screen">
-    <button class="btn-back" onclick="goToIntro()" aria-label="뒤로">← 처음으로</button>
     <div class="choice-inner">
         <p class="eyebrow">STEP 1</p>
-        <h2 class="screen-title">프레임을 골라주세요</h2>
-        <p class="screen-desc">모양 2가지 × 테마 2가지, 총 4종</p>
+        <h1 class="screen-title">속초고등학교 인생네컷</h1>
+        <p class="screen-desc">프레임을 고르면 바로 촬영이 시작돼요.</p>
 
         <div class="choice-grid" id="choiceGrid">
             <!-- JS 렌더링 -->
@@ -48,7 +29,7 @@
     </div>
 </section>
 
-<!-- ══════════════ 포토부스 ══════════════ -->
+<!-- ══════════════ STEP 2 · 포토부스 ══════════════ -->
 <section id="photobooth" class="screen">
     <div class="pb-shell">
         <div class="pb-stage" id="pbStage">
@@ -93,9 +74,9 @@
     </div>
 </section>
 
-<!-- ══════════════ 결과 + QR ══════════════ -->
+<!-- ══════════════ STEP 3 · 결과 + QR ══════════════ -->
 <section id="result" class="screen">
-    <button class="btn-back" onclick="exitToIntro()" aria-label="처음으로">← 처음으로</button>
+    <button class="btn-back" onclick="exitToHome()" aria-label="처음으로">← 처음으로</button>
     <div class="result-inner">
         <div class="result-photo">
             <div class="result-canvas-wrap">
@@ -122,7 +103,7 @@
             <div class="result-actions">
                 <button class="btn btn-ghost" onclick="downloadResult()">이 기기에 저장</button>
                 <button class="btn btn-ghost" onclick="retakePhotos()">다시 찍기</button>
-                <button class="btn btn-primary" onclick="exitToIntro()">완료</button>
+                <button class="btn btn-primary" onclick="exitToHome()">완료</button>
             </div>
         </div>
     </div>
