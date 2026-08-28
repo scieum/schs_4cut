@@ -40,7 +40,7 @@
 
             <div class="pb-topbar">
                 <button class="btn-back btn-back-onstage" onclick="exitPhotoBooth()" aria-label="나가기">← 나가기</button>
-                <div class="pb-counter"><b id="pbPhotoCount">0</b><span>/ 4</span></div>
+                <div class="pb-counter"><b id="pbPhotoCount">0</b><span>/ <span id="pbShotTotal">8</span></span></div>
             </div>
 
             <div class="pb-toast" id="pbToast" hidden></div>
@@ -74,9 +74,39 @@
     </div>
 </section>
 
-<!-- ══════════════ STEP 3 · 결과 + QR ══════════════ -->
+<!-- ══════════════ STEP 3 · 사진 고르기 ══════════════ -->
+<section id="select" class="screen">
+    <button class="btn-back" onclick="retakePhotos()" aria-label="다시 찍기">← 다시 찍기</button>
+    <div class="select-inner">
+        <div class="select-head">
+            <p class="eyebrow">STEP 3</p>
+            <h2 class="screen-title">쓸 사진을 고르세요</h2>
+            <p class="screen-desc">누른 순서대로 프레임에 들어가요 · <b id="selCount">0</b> / <b id="selNeed">4</b></p>
+            <p class="select-warn" id="selectWarn" hidden></p>
+        </div>
+
+        <div class="select-body">
+            <div class="select-grid" id="selectGrid">
+                <!-- JS 렌더링 -->
+            </div>
+
+            <aside class="select-side">
+                <p class="pb-side-label">미리보기</p>
+                <div class="select-preview-wrap">
+                    <canvas id="selectPreview" class="select-preview"></canvas>
+                </div>
+                <div class="select-actions">
+                    <button class="btn btn-ghost" onclick="clearSelection()">선택 지우기</button>
+                    <button class="btn btn-primary" id="selectDone" onclick="confirmSelection()" disabled>이 사진으로 만들기</button>
+                </div>
+            </aside>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════ STEP 4 · 결과 + QR ══════════════ -->
 <section id="result" class="screen">
-    <button class="btn-back" onclick="exitToHome()" aria-label="처음으로">← 처음으로</button>
+    <button class="btn-back" onclick="backToSelect()" aria-label="사진 다시 고르기">← 사진 다시 고르기</button>
     <div class="result-inner">
         <div class="result-photo">
             <div class="result-canvas-wrap">
@@ -85,7 +115,7 @@
         </div>
 
         <div class="result-side">
-            <p class="eyebrow">STEP 3</p>
+            <p class="eyebrow">STEP 4</p>
             <h2 class="screen-title">QR을 찍어 가져가세요</h2>
 
             <div class="qr-box" id="qrBox">
@@ -98,6 +128,7 @@
                 </div>
                 <p class="qr-url" id="qrUrl" hidden></p>
                 <p class="qr-note" id="qrNote" hidden>휴대폰 카메라로 QR을 비추면 사진이 열려요.<br>사진을 꾹 눌러 저장하세요.</p>
+                <button class="btn btn-ghost btn-qr-retry" id="qrRetry" onclick="shareViaQR()" hidden>QR 다시 만들기</button>
             </div>
 
             <div class="result-actions">

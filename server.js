@@ -2,6 +2,7 @@
 // =============================================================
 // 속초고등학교 인생네컷 — 부스 서버
 //  · 정적 파일 서빙 (index.html / css / js)
+//  · GET  /api/frames  : frame/ 폴더의 프레임 PNG 목록
 //  · POST /api/upload  : 완성된 사진 저장 → QR 로 쓸 짧은 URL 반환
 //  · GET  /p/<id>      : 휴대폰에서 열리는 사진 페이지
 //  · GET  /i/<id>.png  : 원본 이미지
@@ -18,6 +19,7 @@ const crypto = require('crypto');
 
 const ROOT = __dirname;
 const UPLOAD_DIR = path.join(ROOT, 'uploads');
+const FRAME_DIR = path.join(ROOT, 'frame');
 const CERT_DIR = path.join(ROOT, 'certs');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -93,6 +95,33 @@ function readBody(req, limit) {
     });
 }
 
+// ── 프레임 목록 ─────────────────────────────────────────────
+// frame/ 폴더에 PNG 를 넣기만 하면 부스에 바로 뜬다.
+// 이름을 따로 붙이고 싶으면 frame/names.json 에 {"frame1.png": "네잎클로버"} 형태로 적는다.
+function handleFrames(req, res) {
+    let names = {};
+    try {
+        names = JSON.parse(fs.readFileSync(path.join(FRAME_DIR, 'names.json'), 'utf8'));
+    } catch (err) { /* 없어도 됨 */ }
+
+    let files = [];
+    try {
+        files = fs.readdirSync(FRAME_DIR)
+            .filter(f => /\.png$/i.test(f))
+            .sort((a, b) => a.localeCompare(b, 'ko', { numeric: true }));
+    } catch (err) {
+        console.warn('[frames] frame/ 폴더가 없습니다');
+    }
+
+    const frames = files.map(file => ({
+        file,
+        url: 'frame/' + encodeURIComponent(file),
+        name: names[file] || file.replace(/\.png$/i, '').replace(/[-_]+/g, ' ')
+    }));
+
+    sendJSON(res, 200, { frames });
+}
+
 // ── 업로드 ──────────────────────────────────────────────────
 async function handleUpload(req, res) {
     let buf;
@@ -134,28 +163,34 @@ function viewerPage(id) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0a0c11">
+<meta name="theme-color" content="#ffffff">
 <title>속초고등학교 인생네컷</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
+  /* 부스 화면과 같은 규칙 — 흰 캔버스, #0075de 액션, 8px/12px 라운드 */
   *{box-sizing:border-box;margin:0;padding:0}
-  body{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
-       padding:28px 20px calc(28px + env(safe-area-inset-bottom));
-       background:#0a0c11 radial-gradient(900px 600px at 50% -10%,#16283f 0%,#0a0c11 62%) fixed;
-       color:#f3f5f8;font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo",sans-serif;text-align:center}
-  h1{font-size:19px;font-weight:800;letter-spacing:-.02em}
-  p{font-size:13px;color:#98a1af;line-height:1.6}
-  img{max-width:min(100%,420px);max-height:66dvh;width:auto;height:auto;border-radius:12px;
-      box-shadow:0 24px 60px -28px #000;display:block}
-  .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-  a.btn{display:inline-block;text-decoration:none;font-size:15px;font-weight:700;padding:14px 26px;border-radius:14px;
-        background:linear-gradient(135deg,#2f7cf6,#16b8cd);color:#fff}
-  a.btn.ghost{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:#f3f5f8}
+  body{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;
+       padding:32px 20px calc(32px + env(safe-area-inset-bottom));
+       background:#fff;color:rgba(0,0,0,.95);
+       font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo",sans-serif;
+       font-size:16px;line-height:1.5;text-align:center;-webkit-font-smoothing:antialiased}
+  h1{font-size:12px;font-weight:700;letter-spacing:.34em;color:#615d59}
+  p{font-size:14px;color:#615d59;line-height:1.6}
+  .photo{width:100%;max-width:420px;display:flex;justify-content:center}
+  img{max-width:100%;max-height:64dvh;width:auto;height:auto;object-fit:contain;
+      border:1px solid rgba(0,0,0,.1);border-radius:12px;
+      box-shadow:0 4px 18px rgba(0,0,0,.1);display:block}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  a.btn{display:inline-block;text-decoration:none;font-size:16px;font-weight:500;line-height:24px;
+        padding:12px 24px;border-radius:8px;border:1px solid transparent;background:#0075de;color:#fff}
+  a.btn:active{background:#0073d9}
+  a.btn.ghost{background:#fff;border-color:rgba(0,0,0,.1);color:rgba(0,0,0,.95)}
+  a.btn.ghost:active{background:#e6f3fe;color:#005bab}
 </style>
 </head>
 <body>
-  <h1>속초고등학교 인생네컷</h1>
-  <img src="/i/${id}.png" alt="인생네컷 사진">
+  <h1>SOKCHO HIGH SCHOOL</h1>
+  <div class="photo"><img src="/i/${id}.png" alt="인생네컷 사진"></div>
   <div class="actions">
     <a class="btn" href="/d/${id}.png" download="sokcho-4cut-${id}.png">사진 저장하기</a>
     <a class="btn ghost" href="/i/${id}.png" target="_blank" rel="noopener">크게 보기</a>
@@ -202,6 +237,7 @@ function handler(req, res) {
     const p = url.pathname;
 
     if (req.method === 'POST' && p === '/api/upload') return handleUpload(req, res);
+    if (req.method === 'GET' && p === '/api/frames') return handleFrames(req, res);
 
     if (req.method === 'GET' || req.method === 'HEAD') {
         let m;

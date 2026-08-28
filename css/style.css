@@ -199,7 +199,9 @@ body {
 }
 .choice-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* 프레임 개수가 몇 개든 가운데 정렬로 자연스럽게 채워진다 */
+    grid-template-columns: repeat(auto-fit, minmax(200px, 280px));
+    justify-content: center;
     gap: 16px;
     margin-top: 32px;
 }
@@ -437,6 +439,110 @@ body {
 }
 .btn-shutter { width: 100%; }
 
+/* ── STEP 3 · 사진 고르기 ────────────────────────────────── */
+.select-inner {
+    width: 100%;
+    max-width: 1180px;
+}
+.select-head { text-align: center; }
+.select-warn {
+    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--danger);
+}
+.select-warn[hidden] { display: none; }
+
+.select-body {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    margin-top: 32px;
+}
+.select-grid {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+.shot-card {
+    position: relative;
+    appearance: none;
+    padding: 0;
+    background: var(--canvas);
+    border: 1px solid var(--line);
+    border-radius: var(--r-action);
+    overflow: hidden;
+    cursor: pointer;
+    line-height: 0;
+    transition: border-color .16s ease, background .16s ease;
+}
+.shot-card:hover { border-color: var(--ink-mute); }
+.shot-card.is-picked { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+.shot-thumb {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+.shot-order {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: none;
+    place-items: center;
+    width: 26px; height: 26px;
+    border-radius: var(--r-pill);
+    background: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 26px;
+    text-align: center;
+}
+.shot-card.is-picked .shot-order { display: block; }
+
+.select-side {
+    flex: 0 0 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    background: var(--canvas);
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    padding: 24px;
+}
+.select-preview-wrap {
+    display: grid;
+    place-items: center;
+    width: 100%;
+}
+.select-preview {
+    display: block;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-photo);
+}
+.select-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+.select-actions .btn { width: 100%; }
+
+.choice-empty {
+    grid-column: 1 / -1;
+    padding: 48px 24px;
+    border: 1px dashed var(--line);
+    border-radius: var(--r-card);
+    color: var(--ink-sub);
+    font-size: 15px;
+}
+
+.btn-qr-retry { margin-top: 12px; width: 100%; }
+.btn-qr-retry[hidden] { display: none; }
+
 /* ── 결과 ───────────────────────────────────────────────── */
 .result-inner {
     display: flex;
@@ -539,11 +645,24 @@ body {
 
 /* ── 반응형 ─────────────────────────────────────────────── */
 @media (max-width: 1100px) {
-    .choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .choice-preview { height: 280px; }
 }
 
 @media (max-width: 900px) {
+    .select-body { flex-direction: column; }
+    .select-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .select-side {
+        flex: none;
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+    }
+    .select-side .pb-side-label { display: none; }
+    .select-preview-wrap { flex: 0 0 auto; width: auto; }
+    .select-actions { flex: 1 1 200px; width: auto; }
+
     .pb-shell { flex-direction: column; align-items: stretch; }
     .pb-side {
         flex: none;
@@ -563,7 +682,10 @@ body {
 @media (max-width: 560px) {
     .screen { padding-top: 84px; }
     .topbar { left: 16px; right: 16px; }
-    .choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .choice-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    .select-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .select-side { flex-direction: column; align-items: stretch; }
+    .select-actions { width: 100%; }
     .choice-preview { height: 200px; padding: 12px; }
     .choice-card { padding: 12px; gap: 12px; }
     .result-inner { gap: 24px; }

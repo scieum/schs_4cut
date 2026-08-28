@@ -3,19 +3,30 @@
 // =============================================================
 
 const CFG = window.BOOTH_CONFIG;
-const PHOTO_COUNT = CFG.photoCount || 4;
+const SHOT_COUNT = CFG.shotCount || 8;
 
 const state = {
-    frame: FRAMES[0],
+    frame: null,
     stream: null,
     video: null,
-    shots: [],          // 촬영된 canvas 배열
+    shots: [],          // 촬영된 canvas 8장
+    picks: [],          // 그 중 고른 인덱스 — 누른 순서가 곧 프레임 순서
     shooting: false,
     aborted: false,
     dateText: todayText(),
     resultBlob: null,
     shareUrl: null
 };
+
+// 프레임 칸 수만큼 고른다 (프레임 PNG 에서 자동으로 읽어온 값)
+function pickTarget() {
+    return state.frame ? state.frame.slotCount : 4;
+}
+
+// 고른 순서대로 정렬된 사진 배열
+function pickedShots() {
+    return state.picks.map(i => state.shots[i]);
+}
 
 // ===== 화면 전환 =====
 function showScreen(id) {
@@ -34,12 +45,17 @@ function renderFrameChoices() {
     const grid = document.getElementById('choiceGrid');
     grid.innerHTML = '';
 
+    if (!FRAMES.length) {
+        grid.innerHTML = '<p class="choice-empty">frame/ 폴더에 프레임 PNG를 넣어주세요.</p>';
+        return;
+    }
+
     const pending = [];
 
     FRAMES.forEach(frame => {
         const card = document.createElement('button');
         card.type = 'button';
-        card.className = 'choice-card' + (frame.theme.id === 'black' ? ' is-dark' : '');
+        card.className = 'choice-card';
         card.onclick = () => chooseFrame(frame.id);
 
         const wrap = document.createElement('div');
@@ -50,8 +66,8 @@ function renderFrameChoices() {
         const meta = document.createElement('div');
         meta.className = 'choice-meta';
         meta.innerHTML =
-            `<h3>${frame.layout.name}<span class="chip chip-${frame.theme.id}">${frame.theme.name}</span></h3>` +
-            `<p>${frame.layout.desc}</p>`;
+            `<h3>${frame.name}</h3>` +
+            `<p>${frame.slotCount}컷 프레임</p>`;
 
         card.appendChild(wrap);
         card.appendChild(meta);
@@ -59,15 +75,13 @@ function renderFrameChoices() {
         pending.push({ cv, frame, wrap });
     });
 
-    // 매트(.choice-preview)에 실제로 남는 공간을 재서 세로형·직사각형이
-    // 같은 칸 안에 나란히 들어가게 한다.
+    // 매트(.choice-preview)에 실제로 남는 공간을 재서 프레임 비율대로 그린다.
     pending.forEach(({ cv, frame, wrap }) => {
         const box = wrap.getBoundingClientRect();
         const pad = 32;
         renderFramePreview(cv, frame, null, {
             maxW: Math.max(80, box.width - pad),
-            maxH: Math.max(80, box.height - pad),
-            dateText: state.dateText
+            maxH: Math.max(80, box.height - pad)
         });
     });
 }
@@ -82,6 +96,7 @@ function goToFrameChoice() {
 
 function chooseFrame(id) {
     state.frame = getFrame(id);
+    state.picks = [];
     showScreen('photobooth');
     initPhotoBooth();
 }
@@ -89,18 +104,18 @@ function chooseFrame(id) {
 // ===== STEP 2 · 포토부스 =====
 function updateSidePreview() {
     const compact = window.matchMedia('(max-width: 900px)').matches;
+    // 8장을 찍은 뒤 고르는 방식이라, 촬영 중에는 프레임 모양만 보여준다.
     renderFramePreview(
         document.getElementById('pbPreviewCanvas'),
         state.frame,
-        state.shots,
-        compact
-            ? { maxW: 150, maxH: 130, dateText: state.dateText }
-            : { maxW: 300, maxH: 420, dateText: state.dateText }
+        null,
+        compact ? { maxW: 150, maxH: 150 } : { maxW: 260, maxH: 440 }
     );
 }
 
 function updatePhotoCount() {
     document.getElementById('pbPhotoCount').textContent = state.shots.length;
+    document.getElementById('pbShotTotal').textContent = SHOT_COUNT;
 }
 
 function setHint(msg) {
@@ -232,6 +247,7 @@ function hidePbError() {
 // --- 촬영 ---
 function resetShots() {
     state.shots = [];
+    state.picks = [];
     state.shooting = false;
     state.aborted = false;
     updatePhotoCount();
@@ -254,34 +270,34 @@ async function startShooting() {
     btn.disabled = true;
     btn.textContent = '촬영 중…';
 
-    for (let i = state.shots.length; i < PHOTO_COUNT; i++) {
+    for (let i = state.shots.length; i < SHOT_COUNT; i++) {
         setHint(`${i + 1}번째 컷 — 준비!`);
         await runCountdown(CFG.countdownSec || 3);
         if (state.aborted) return abortShooting();
         flash();
         state.shots.push(captureFrame());
         updatePhotoCount();
-        updateSidePreview();
 
-        if (i < PHOTO_COUNT - 1) {
+        if (i < SHOT_COUNT - 1) {
             setHint('좋아요! 다음 포즈 준비하세요');
             await sleep((CFG.intervalSec || 2) * 1000);
             if (state.aborted) return abortShooting();
         }
     }
 
-    setHint('완성! 사진을 만드는 중…');
+    setHint(`${SHOT_COUNT}장 완성! 이제 마음에 드는 사진을 고르세요`);
     await sleep(500);
     if (state.aborted) return abortShooting();
     state.shooting = false;
     stopCamera();
-    await goToResult();
+    goToSelect();
 }
 
 // 촬영 중 사용자가 화면을 벗어난 경우
 function abortShooting() {
     state.shooting = false;
     state.shots = [];
+    state.picks = [];
     document.getElementById('pbCountdown').classList.remove('active');
 }
 
@@ -313,7 +329,8 @@ function captureFrame() {
     const v = state.video;
     const vw = v.videoWidth;
     const vh = v.videoHeight;
-    const target = state.frame.layout.photoW / state.frame.layout.photoH;
+    const slot = state.frame.slots[0];
+    const target = slot.w / slot.h;
 
     let sw = vw, sh = vh;
     if (vw / vh > target) sw = Math.round(vh * target);
@@ -346,7 +363,112 @@ function stopCamera() {
     if (state.video) state.video.srcObject = null;
 }
 
-// ===== STEP 3 · 결과 + QR =====
+// ===== STEP 3 · 사진 고르기 =====
+// 8장 중에서 프레임 칸 수만큼, 누른 순서대로 고른다.
+function goToSelect() {
+    state.picks = [];
+    showScreen('select');
+    renderShotGrid();
+    updateSelection();
+}
+
+function renderShotGrid() {
+    const grid = document.getElementById('selectGrid');
+    grid.innerHTML = '';
+
+    state.shots.forEach((shot, i) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'shot-card';
+        card.dataset.index = String(i);
+        card.onclick = () => toggleShot(i);
+
+        const cv = document.createElement('canvas');
+        cv.className = 'shot-thumb';
+        drawThumb(cv, shot, 320);
+
+        const badge = document.createElement('span');
+        badge.className = 'shot-order';
+        badge.setAttribute('aria-hidden', 'true');
+
+        card.appendChild(cv);
+        card.appendChild(badge);
+        grid.appendChild(card);
+    });
+}
+
+// 썸네일은 원본을 그대로 쓰면 무거워서 폭 기준으로 줄여 그린다.
+function drawThumb(canvas, source, targetW) {
+    const scale = Math.min(1, targetW / source.width);
+    canvas.width = Math.round(source.width * scale);
+    canvas.height = Math.round(source.height * scale);
+    canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
+}
+
+function toggleShot(i) {
+    const at = state.picks.indexOf(i);
+    if (at >= 0) {
+        state.picks.splice(at, 1);            // 다시 누르면 빼고, 뒤 번호가 당겨진다
+    } else {
+        if (state.picks.length >= pickTarget()) {
+            toastSelect(`${pickTarget()}장까지만 고를 수 있어요. 빼려면 사진을 한 번 더 누르세요`);
+            return;
+        }
+        state.picks.push(i);
+    }
+    updateSelection();
+}
+
+function clearSelection() {
+    state.picks = [];
+    updateSelection();
+}
+
+function updateSelection() {
+    const need = pickTarget();
+
+    document.querySelectorAll('#selectGrid .shot-card').forEach(card => {
+        const i = Number(card.dataset.index);
+        const order = state.picks.indexOf(i);
+        card.classList.toggle('is-picked', order >= 0);
+        card.querySelector('.shot-order').textContent = order >= 0 ? String(order + 1) : '';
+        card.setAttribute('aria-pressed', order >= 0 ? 'true' : 'false');
+    });
+
+    document.getElementById('selCount').textContent = state.picks.length;
+    document.getElementById('selNeed').textContent = need;
+    document.getElementById('selectDone').disabled = state.picks.length !== need;
+
+    const compact = window.matchMedia('(max-width: 900px)').matches;
+    renderFramePreview(
+        document.getElementById('selectPreview'),
+        state.frame,
+        pickedShots(),
+        compact ? { maxW: 230, maxH: 320 } : { maxW: 260, maxH: 460 }
+    );
+}
+
+function toastSelect(msg) {
+    const el = document.getElementById('selectWarn');
+    el.textContent = msg;
+    el.hidden = false;
+    clearTimeout(toastSelect._t);
+    toastSelect._t = setTimeout(() => { el.hidden = true; }, 1800);
+}
+
+async function confirmSelection() {
+    if (state.picks.length !== pickTarget()) return;
+    await goToResult();
+}
+
+function backToSelect() {
+    state.shareUrl = null;
+    if (!state.shots.length) return goHome();
+    showScreen('select');
+    updateSelection();
+}
+
+// ===== STEP 4 · 결과 + QR =====
 async function goToResult() {
     showScreen('result');
     await composeResult();
@@ -361,10 +483,10 @@ async function composeResult() {
     const canvas = document.getElementById('resultCanvas');
     canvas.width = frame.width;
     canvas.height = frame.height;
-    drawFrame(canvas.getContext('2d'), frame, state.shots, { dateText: state.dateText });
+    drawFrame(canvas.getContext('2d'), frame, pickedShots());
 
-    // 화면 표시 크기 (레이아웃에 따라 세로/가로 비율이 달라짐)
-    canvas.classList.toggle('is-strip', frame.layout.id === 'strip');
+    // 세로로 긴 프레임은 화면에서 더 좁게 잡는다
+    canvas.classList.toggle('is-strip', frame.height / frame.width > 1.8);
 
     state.resultBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
 }
@@ -410,14 +532,21 @@ async function shareViaQR() {
     const wrap = document.getElementById('qrCanvasWrap');
     const urlEl = document.getElementById('qrUrl');
     const noteEl = document.getElementById('qrNote');
+    const retryEl = document.getElementById('qrRetry');
 
     wrap.hidden = true;
     urlEl.hidden = true;
     noteEl.hidden = true;
+    retryEl.hidden = true;
 
     const mode = (CFG.upload && CFG.upload.mode) || 'auto';
     if (mode === 'off') {
         setQrStatus('QR 공유가 꺼져 있어요. "이 기기에 저장"을 눌러주세요.', { error: true });
+        return;
+    }
+    if (!state.resultBlob) {
+        setQrStatus('사진이 아직 준비되지 않았어요.', { error: true });
+        retryEl.hidden = false;
         return;
     }
 
@@ -434,8 +563,28 @@ async function shareViaQR() {
         document.getElementById('qrStatus').hidden = true;
     } catch (err) {
         console.error('[upload]', err);
-        setQrStatus('사진 서버에 올리지 못했어요. "이 기기에 저장"으로 받아주세요.', { error: true });
+        setQrStatus(uploadErrorMessage(err), { error: true });
+        retryEl.hidden = false;
     }
+}
+
+// 왜 실패했는지까지 알려줘야 부스에서 바로 조치할 수 있다.
+function uploadErrorMessage(err) {
+    if (location.protocol === 'file:') {
+        return 'QR을 만들려면 서버로 열어야 해요. 터미널에서 "node server.js" 를 실행한 뒤 ' +
+               '주소창에 http://localhost:3000 을 입력해 주세요.';
+    }
+    const msg = String((err && err.message) || '');
+    if (/404/.test(msg)) {
+        return '사진 서버(/api/upload)를 찾지 못했어요. server.js 가 실행 중인지 확인해 주세요.';
+    }
+    if (/413|too large/i.test(msg)) {
+        return '사진 용량이 너무 커서 올리지 못했어요. "이 기기에 저장"으로 받아주세요.';
+    }
+    if (/Failed to fetch|NetworkError|load failed/i.test(msg)) {
+        return '사진 서버에 연결하지 못했어요. Wi-Fi와 server.js 실행 상태를 확인해 주세요.';
+    }
+    return '사진 서버에 올리지 못했어요. "이 기기에 저장"으로 받아주세요.';
 }
 
 async function uploadResult(blob, mode) {
@@ -539,7 +688,13 @@ function drawQR(canvas, text) {
 }
 
 // ===== 시작 =====
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    state.dateText = todayText();
+    const dateEl = document.getElementById('todayDate');
+    if (dateEl) dateEl.textContent = state.dateText;
+
+    await loadFrames();
+    state.frame = FRAMES[0] || null;
     goToFrameChoice();
 });
 
@@ -550,5 +705,7 @@ window.addEventListener('resize', () => {
         if (booth && booth.classList.contains('active')) updateSidePreview();
         const home = document.getElementById('home');
         if (home && home.classList.contains('active')) renderFrameChoices();
+        const select = document.getElementById('select');
+        if (select && select.classList.contains('active')) updateSelection();
     }, 200);
 });

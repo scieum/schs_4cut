@@ -4,14 +4,17 @@
 // =============================================================
 
 window.BOOTH_CONFIG = {
-    // 프레임 하단에 찍히는 문구
+    // 화면 상단에 표시되는 학교 이름
     schoolName: '속초고등학교',
     schoolNameEn: 'SOKCHO HIGH SCHOOL',
 
     // 촬영 설정
-    photoCount: 4,
+    shotCount: 8,         // 총 몇 장을 찍을지 (이 중에서 프레임 칸 수만큼 고른다)
     countdownSec: 3,      // 각 컷 카운트다운
     intervalSec: 2,       // 컷 사이 쉬는 시간 (포즈 바꾸는 시간)
+
+    // 프레임은 frame/ 폴더의 PNG 에서만 가져온다.
+    // 파일을 넣기만 하면 목록에 뜨고, 이름은 frame/names.json 으로 바꿀 수 있다.
 
     // QR 공유용 업로드 방식
     //  'auto'       : 로컬 서버(server.js) → Cloudinary → imgbb 순으로 시도
