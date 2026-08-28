@@ -1,0 +1,11 @@
+{
+  "name": "sokcho-4cut",
+  "version": "1.0.0",
+  "description": "속초고등학교 인생네컷 포토부스 — 프레임 선택 + 4컷 촬영 + QR 공유",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": { "node": ">=18" }
+}

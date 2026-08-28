@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0b0d12">
+    <title>속초고등학교 인생네컷</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0c11'/%3E%3Crect x='8' y='5' width='16' height='22' rx='2' fill='%23fff'/%3E%3Crect x='10' y='7' width='12' height='7' rx='1' fill='%232f7cf6'/%3E%3Crect x='10' y='15' width='12' height='7' rx='1' fill='%2316b8cd'/%3E%3C/svg%3E">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ══════════════ 인트로 ══════════════ -->
+<section id="intro" class="screen active" onclick="startFromIntro(event)">
+    <div class="intro-top">
+        <span class="intro-mark">SOKCHO HIGH SCHOOL</span>
+        <span class="intro-date" id="introDate"></span>
+    </div>
+
+    <div class="intro-inner">
+        <div class="intro-copy">
+            <h1 class="intro-title">속초고등학교<br><em>인생네컷</em></h1>
+            <button class="btn btn-primary btn-start" onclick="startFromIntro(event)">
+                시작하기<span class="btn-arrow" aria-hidden="true">→</span>
+            </button>
+        </div>
+
+        <div class="intro-showcase">
+            <div class="intro-stage" id="introStage"></div>
+            <p class="intro-frame-name" id="introFrameName"></p>
+            <div class="intro-dots" id="introDots"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════ 프레임 선택 ══════════════ -->
+<section id="frameChoice" class="screen">
+    <button class="btn-back" onclick="goToIntro()" aria-label="뒤로">← 처음으로</button>
+    <div class="choice-inner">
+        <p class="eyebrow">STEP 1</p>
+        <h2 class="screen-title">프레임을 골라주세요</h2>
+        <p class="screen-desc">모양 2가지 × 테마 2가지, 총 4종</p>
+
+        <div class="choice-grid" id="choiceGrid">
+            <!-- JS 렌더링 -->
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════ 포토부스 ══════════════ -->
+<section id="photobooth" class="screen">
+    <div class="pb-shell">
+        <div class="pb-stage" id="pbStage">
+            <video id="cameraVideo" autoplay playsinline muted webkit-playsinline aria-hidden="true"></video>
+            <div class="pb-guide" aria-hidden="true"></div>
+            <div class="pb-flash" id="pbFlash" aria-hidden="true"></div>
+            <div class="pb-countdown" id="pbCountdown" aria-hidden="true"></div>
+
+            <div class="pb-topbar">
+                <button class="btn-back btn-back-onstage" onclick="exitPhotoBooth()" aria-label="나가기">← 나가기</button>
+                <div class="pb-counter"><b id="pbPhotoCount">0</b><span>/ 4</span></div>
+            </div>
+
+            <div class="pb-toast" id="pbToast" hidden></div>
+
+            <div class="pb-play-gate" id="pbPlayGate" hidden>
+                <div class="pb-play-gate-inner">
+                    <div class="pb-play-icon">▶</div>
+                    <h3>화면을 탭해서 카메라 켜기</h3>
+                    <p>아이패드·아이폰에서는 한 번 탭해야 카메라가 시작돼요</p>
+                </div>
+            </div>
+
+            <div class="pb-error" id="pbError" hidden>
+                <h3 id="pbErrorTitle">카메라를 사용할 수 없어요</h3>
+                <p id="pbErrorMsg">브라우저에서 카메라 권한을 허용해주세요.</p>
+                <div class="pb-error-actions">
+                    <button class="btn btn-primary" onclick="initPhotoBooth()">다시 시도</button>
+                    <button class="btn btn-ghost" onclick="exitPhotoBooth()">처음으로</button>
+                </div>
+            </div>
+        </div>
+
+        <aside class="pb-side">
+            <p class="pb-side-label">선택한 프레임</p>
+            <div class="pb-preview-wrap">
+                <canvas id="pbPreviewCanvas" class="pb-preview"></canvas>
+            </div>
+            <p class="pb-hint" id="pbHint">준비되면 촬영을 시작하세요</p>
+            <button class="btn btn-primary btn-shutter" id="pbShutter" onclick="startShooting()">촬영 시작</button>
+        </aside>
+    </div>
+</section>
+
+<!-- ══════════════ 결과 + QR ══════════════ -->
+<section id="result" class="screen">
+    <button class="btn-back" onclick="exitToIntro()" aria-label="처음으로">← 처음으로</button>
+    <div class="result-inner">
+        <div class="result-photo">
+            <div class="result-canvas-wrap">
+                <canvas id="resultCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="result-side">
+            <p class="eyebrow">STEP 3</p>
+            <h2 class="screen-title">QR을 찍어 가져가세요</h2>
+
+            <div class="qr-box" id="qrBox">
+                <div class="qr-canvas-wrap" id="qrCanvasWrap">
+                    <canvas id="qrCanvas"></canvas>
+                </div>
+                <div class="qr-status" id="qrStatus">
+                    <span class="spinner" aria-hidden="true"></span>
+                    <span id="qrStatusText">사진을 올리는 중…</span>
+                </div>
+                <p class="qr-url" id="qrUrl" hidden></p>
+                <p class="qr-note" id="qrNote" hidden>휴대폰 카메라로 QR을 비추면 사진이 열려요.<br>사진을 꾹 눌러 저장하세요.</p>
+            </div>
+
+            <div class="result-actions">
+                <button class="btn btn-ghost" onclick="downloadResult()">이 기기에 저장</button>
+                <button class="btn btn-ghost" onclick="retakePhotos()">다시 찍기</button>
+                <button class="btn btn-primary" onclick="exitToIntro()">완료</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="js/vendor/qrcode.js"></script>
+<script src="js/config.js"></script>
+<script src="js/frames.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
