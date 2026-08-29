@@ -26,10 +26,14 @@
 ```
 frame/
 ├── sets.json       세트 · 색 정의 (여기에 등록해야 화면에 나옵니다)
-├── frame1.png ~ frame5.png     격자 4컷   (기본: 하늘)
-├── frame6.png ~ frame8.png     콜라주 4컷 (기본: 그레이)
-└── frame9.png ~ frame13.png    세로 4컷   (기본: 핑크)
+├── frame1.png ~ frame5.png     격자 4컷   891×1260  (기본: 하늘)
+├── frame6.png ~ frame8.png     콜라주 4컷 891×1260  (기본: 그레이)
+├── frame9.png ~ frame13.png    세로 4컷   400×1200  (기본: 핑크)
+└── frame_4/1.png ~ 5.png       가로 4컷   1260×891  (기본: 화이트)
 ```
+
+`file` 은 `frame/` 기준 경로라서 위처럼 **하위 폴더로 묶어도 됩니다**
+(`"file": "frame_4/1.png"`). 평평하게 두든 폴더로 나누든 상관없습니다.
 
 `sets.json` 한 곳만 고치면 됩니다.
 

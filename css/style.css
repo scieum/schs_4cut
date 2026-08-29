@@ -198,20 +198,19 @@ body {
 /* ── 홈 = 프레임 선택 ────────────────────────────────────── */
 .choice-inner {
     width: 100%;
-    max-width: 1080px;
+    max-width: 1280px;
     text-align: center;
 }
 .choice-grid {
     display: grid;
     /* 세트 개수가 몇 개든 한 줄에 고르게 나눠 담는다.
        justify-content:center 를 주면 auto-fit 트랙이 늘어나지 않아 칸이 줄어든다. */
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     align-items: start;
     gap: 16px;
     margin-top: 32px;
 }
 .choice-card {
-    --pick-h: clamp(260px, 42vh, 420px);
     background: var(--canvas);
     border: 1px solid var(--line);
     border-radius: var(--r-card);
@@ -227,11 +226,13 @@ body {
 /* 프레임 자체가 배경을 가지고 있으니 매트 없이 카드 폭을 꽉 채운다 */
 .choice-pick {
     appearance: none;
-    /* 세로형·격자형이 섞여도 카드 높이가 같도록 높이를 고정하고 안에서 맞춘다 */
+    /* 세로형·가로형이 섞여도 카드 높이가 같도록 상자 비율을 고정하고 안에서 맞춘다.
+       높이를 뷰포트가 아니라 카드 폭에 비례시켜야 좁은 화면에서도 프레임이 작아지지 않는다. */
     display: grid;
     place-items: center;
     width: 100%;
-    height: var(--pick-h);
+    aspect-ratio: 1 / 1.55;
+    max-height: 52vh;
     padding: 0;
     background: none;
     border: 0;
@@ -240,7 +241,7 @@ body {
 .choice-canvas {
     display: block;
     max-width: 100%;
-    max-height: var(--pick-h);
+    max-height: 100%;
     border-radius: 4px;
     border: 1px solid var(--line);
     box-shadow: var(--shadow-photo);
