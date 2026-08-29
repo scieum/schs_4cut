@@ -660,8 +660,14 @@ function uploadErrorMessage(err) {
                '주소창에 http://localhost:3000 을 입력해 주세요.';
     }
     const msg = String((err && err.message) || '');
-    if (/404/.test(msg)) {
+    if (/^404/.test(msg) || /404 /.test(msg)) {
         return '사진 서버(/api/upload)를 찾지 못했어요. server.js 가 실행 중인지 확인해 주세요.';
+    }
+    if (/Blob 스토어/.test(msg)) {
+        return 'Vercel Blob 스토어가 아직 연결되지 않았어요. "이 기기에 저장"으로 받아주세요.';
+    }
+    if (/^503/.test(msg)) {
+        return '사진 서버가 아직 준비되지 않았어요. "이 기기에 저장"으로 받아주세요.';
     }
     if (/413|too large/i.test(msg)) {
         return '사진 용량이 너무 커서 올리지 못했어요. "이 기기에 저장"으로 받아주세요.';
@@ -682,17 +688,20 @@ async function uploadResult(blob, mode) {
     const up = CFG.upload || {};
     const order = mode === 'auto' ? ['local', 'cloudinary', 'imgbb'] : [mode];
 
-    let lastErr;
+    const errors = [];
     for (const provider of order) {
         try {
             if (provider === 'local') return await uploadLocal(blob, up.local);
             if (provider === 'cloudinary') return await uploadCloudinary(blob, up.cloudinary);
             if (provider === 'imgbb') return await uploadImgbb(blob, up.imgbb);
         } catch (err) {
-            lastErr = err;
+            errors.push(err);
         }
     }
-    throw lastErr || new Error('업로드 가능한 서버가 없습니다');
+
+    // 설정조차 안 된 항목보다, 실제로 시도했다가 실패한 쪽을 원인으로 알린다
+    const real = errors.find(e => !/미설정/.test(e.message || ''));
+    throw real || errors[0] || new Error('업로드 가능한 서버가 없습니다');
 }
 
 async function uploadLocal(blob, conf) {
@@ -703,9 +712,13 @@ async function uploadLocal(blob, conf) {
         headers: { 'Content-Type': 'image/png' },
         body: blob
     });
-    if (!res.ok) throw new Error('local upload failed: ' + res.status);
+    if (!res.ok) {
+        // 서버가 알려준 이유를 그대로 살려서 화면에 보여준다
+        const reason = await res.json().then(j => j && j.error).catch(() => null);
+        throw new Error(reason ? `${res.status} ${reason}` : `업로드 실패 (${res.status})`);
+    }
     const json = await res.json();
-    if (!json.url) throw new Error('local upload: no url');
+    if (!json.url) throw new Error('서버가 주소를 주지 않았습니다');
     return json.url;
 }
 

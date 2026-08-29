@@ -68,12 +68,16 @@ body {
     display: none;
     min-height: 100dvh;
     padding: max(24px, env(safe-area-inset-top)) 24px 32px;
+    overflow-y: auto;
 }
+/* 가운데 정렬하되, 내용이 화면보다 크면 잘리지 않고 스크롤되게.
+   safe 를 모르는 브라우저는 앞줄(center)만 적용된다. */
 .screen.active {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    justify-content: safe center;
     animation: fadeUp .35s ease both;
 }
 @keyframes fadeUp {
@@ -194,20 +198,20 @@ body {
 /* ── 홈 = 프레임 선택 ────────────────────────────────────── */
 .choice-inner {
     width: 100%;
-    max-width: 1180px;
+    max-width: 1080px;
     text-align: center;
 }
 .choice-grid {
     display: grid;
-    /* 프레임 개수가 몇 개든 가운데 정렬로 자연스럽게 채워진다 */
-    grid-template-columns: repeat(auto-fit, minmax(200px, 300px));
-    justify-content: center;
+    /* 세트 개수가 몇 개든 한 줄에 고르게 나눠 담는다.
+       justify-content:center 를 주면 auto-fit 트랙이 늘어나지 않아 칸이 줄어든다. */
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     align-items: start;
     gap: 16px;
     margin-top: 32px;
 }
 .choice-card {
-    --pick-h: clamp(300px, 46vh, 440px);
+    --pick-h: clamp(260px, 42vh, 420px);
     background: var(--canvas);
     border: 1px solid var(--line);
     border-radius: var(--r-card);
@@ -731,7 +735,7 @@ body {
 @media (max-width: 560px) {
     .screen { padding-top: 84px; }
     .topbar { left: 16px; right: 16px; }
-    .choice-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    .choice-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
     .select-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .select-side { flex-direction: column; align-items: stretch; }
     .select-actions { width: 100%; }
