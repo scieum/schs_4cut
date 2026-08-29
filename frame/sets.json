@@ -1,0 +1,42 @@
+{
+  "_comment": "프레임 세트 정의. 파일을 추가하면 여기에도 한 줄 넣어야 첫 화면에 나옵니다. swatch(색 동그라미)는 PNG 배경색에서 자동으로 읽으므로 적지 않아도 됩니다.",
+  "sets": [
+    {
+      "id": "grid",
+      "name": "격자 4컷",
+      "desc": "2 × 2로 나란히",
+      "default": "frame1.png",
+      "colors": [
+        { "file": "frame1.png", "name": "하늘" },
+        { "file": "frame2.png", "name": "화이트" },
+        { "file": "frame3.png", "name": "블랙" },
+        { "file": "frame4.png", "name": "그레이" },
+        { "file": "frame5.png", "name": "핑크" }
+      ]
+    },
+    {
+      "id": "collage",
+      "name": "콜라주 4컷",
+      "desc": "엇갈리게 배치",
+      "default": "frame7.png",
+      "colors": [
+        { "file": "frame7.png", "name": "그레이" },
+        { "file": "frame6.png", "name": "블랙" },
+        { "file": "frame8.png", "name": "화이트" }
+      ]
+    },
+    {
+      "id": "strip",
+      "name": "세로 4컷",
+      "desc": "한 줄로 길게",
+      "default": "frame13.png",
+      "colors": [
+        { "file": "frame13.png", "name": "핑크" },
+        { "file": "frame12.png", "name": "하늘" },
+        { "file": "frame9.png", "name": "화이트" },
+        { "file": "frame11.png", "name": "그레이" },
+        { "file": "frame10.png", "name": "블랙" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>속초고등학교 인생네컷</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  /* 부스 화면과 같은 규칙 — 흰 캔버스, #0075de 액션, 8px/12px 라운드 */
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;
+       padding:32px 20px calc(32px + env(safe-area-inset-bottom));
+       background:#fff;color:rgba(0,0,0,.95);
+       font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo",sans-serif;
+       font-size:16px;line-height:1.5;text-align:center;-webkit-font-smoothing:antialiased}
+  h1{font-size:12px;font-weight:700;letter-spacing:.34em;color:#615d59}
+  p{font-size:14px;color:#615d59;line-height:1.6}
+  .photo{width:100%;max-width:420px;display:flex;justify-content:center}
+  img{max-width:100%;max-height:64dvh;width:auto;height:auto;object-fit:contain;
+      border:1px solid rgba(0,0,0,.1);border-radius:12px;
+      box-shadow:0 4px 18px rgba(0,0,0,.1);display:block}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  a.btn{display:inline-block;text-decoration:none;font-size:16px;font-weight:500;line-height:24px;
+        padding:12px 24px;border-radius:8px;border:1px solid transparent;background:#0075de;color:#fff}
+  a.btn:active{background:#0073d9}
+  a.btn.ghost{background:#fff;border-color:rgba(0,0,0,.1);color:rgba(0,0,0,.95)}
+  a.btn.ghost:active{background:#e6f3fe;color:#005bab}
+  .err{color:#c8402d}
+</style>
+</head>
+<body>
+  <h1>SOKCHO HIGH SCHOOL</h1>
+  <div class="photo" id="photo"></div>
+  <div class="actions" id="actions"></div>
+  <p id="note">아이폰에서는 사진을 길게 눌러<br>&ldquo;사진에 추가&rdquo;를 선택해도 저장돼요.</p>
+
+<script>
+// ?u=<이미지 주소> 로 열린다. 부스가 올린 사진만 보여주면 되므로
+// https 주소만 허용해서 엉뚱한 스킴이 끼어들지 않게 한다.
+(function () {
+    const raw = new URLSearchParams(location.search).get('u') || '';
+    let src = '';
+    try {
+        const u = new URL(raw, location.origin);
+        if (u.protocol === 'https:' || u.protocol === 'http:') src = u.href;
+    } catch (err) { /* 잘못된 주소 */ }
+
+    const photo = document.getElementById('photo');
+    const actions = document.getElementById('actions');
+
+    if (!src) {
+        document.getElementById('note').className = 'err';
+        document.getElementById('note').textContent = '사진 주소가 없어요. QR을 다시 찍어주세요.';
+        return;
+    }
+
+    const img = new Image();
+    img.alt = '인생네컷 사진';
+    img.src = src;
+    photo.appendChild(img);
+
+    const save = document.createElement('a');
+    save.className = 'btn';
+    save.href = src;
+    save.download = 'sokcho-4cut.png';
+    save.textContent = '사진 저장하기';
+
+    const open = document.createElement('a');
+    open.className = 'btn ghost';
+    open.href = src;
+    open.target = '_blank';
+    open.rel = 'noopener';
+    open.textContent = '크게 보기';
+
+    actions.appendChild(save);
+    actions.appendChild(open);
+})();
+</script>
+</body>
+</html>

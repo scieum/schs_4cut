@@ -1,87 +1,75 @@
 // =============================================================
 // 프레임 시스템
-//  - 프레임은 frame/ 폴더의 PNG 파일에서만 가져온다.
-//  - PNG 안의 흰 사각형(사진 칸)을 자동으로 찾아 그 자리에 사진을 넣는다.
-//  - 칸 위에 걸쳐 있는 장식(테이프·클로버·캐릭터 등)은 사진 위로 올라온다.
+//  - 프레임은 frame/ 폴더의 PNG 에서만 가져온다.
+//  - frame/sets.json 이 세트(격자 / 콜라주 / 세로)와 색을 정의한다.
+//  - PNG 안의 밝은 사각형(사진 칸)을 자동으로 찾아 그 자리에 사진을 넣는다.
+//  - 칸 위에 걸쳐 있는 장식(테이프·클로버·캐릭터·말풍선)은 사진 위로 올라온다.
 // =============================================================
 
-// 서버 없이(정적 호스팅·file://) 열렸을 때 읽는 목록.
-// frame/names.json 의 키 순서가 그대로 프레임 순서가 된다.
-const FRAME_LIST_FALLBACK = 'frame/names.json';
+const SETS_URL = 'frame/sets.json';
 
 // 사진 칸 판별 기준
-const WIN_WHITE = 244;        // 이 값보다 밝으면 '흰 칸' 후보
-const WIN_MIN_AREA = 0.02;    // 전체 픽셀의 2% 이상이어야 사진 칸으로 인정
+//  · 밝고(min >= 200) 색기가 거의 없는(max-min <= 22) 영역만 후보로 본다.
+//    → 흰 칸(255,255,255)과 아이보리 칸(255,255,242)은 잡히고,
+//      하늘색·핑크 배경은 색기 때문에 자동으로 걸러진다.
+//  · 흰·회색 배경(frame2/4/8 등)은 색으로는 못 거르므로,
+//    마스크를 몇 픽셀 깎아 칸과 배경의 연결을 끊고
+//    이미지 가장자리에 닿는 덩어리를 배경으로 보고 버린다.
+const WIN_LIGHT_MIN = 200;
+const WIN_NEUTRAL_MAX = 22;
+const WIN_MIN_AREA = 0.02;
+// 칸 안에 완전히 갇힌 회색 덩어리(사진 자리 표시 아이콘)는 사진으로 덮는다.
+// 반대로 색이 있는 장식(노란 꽃 등)은 사진 위에 남긴다.
+const HOLE_COLOR_RATIO = 0.10;
 
-let FRAMES = [];
+let FRAME_SETS = [];
+const frameCache = new Map();      // url → Promise<frame>
 
-function getFrame(id) {
-    return FRAMES.find(f => f.id === id) || FRAMES[0];
-}
+// --- 세트 목록 ----------------------------------------------------
+async function loadFrameSets() {
+    const res = await fetch(SETS_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('frame/sets.json 을 읽지 못했습니다 (' + res.status + ')');
+    const json = await res.json();
 
-// --- 목록 불러오기 ------------------------------------------------
-async function loadFrames() {
-    let list = await fetchFrameList();
-    if (!list.length) list = await fetchStaticFrameList();
-
-    const loaded = [];
-    for (const item of list) {
-        try {
-            loaded.push(await buildFrame(item));
-        } catch (err) {
-            console.error('[frames] 불러오지 못한 프레임:', item.url, err);
-        }
-    }
-    FRAMES = loaded;
-    return FRAMES;
-}
-
-// server.js 가 있으면 폴더를 그대로 읽어온다
-async function fetchFrameList() {
-    try {
-        const res = await fetch('api/frames', { cache: 'no-store' });
-        if (!res.ok) return [];
-        const json = await res.json();
-        return Array.isArray(json.frames) ? json.frames : [];
-    } catch (err) {
-        console.warn('[frames] /api/frames 사용 불가 — names.json 으로 진행', err);
-        return [];
-    }
-}
-
-// 정적 호스팅(Vercel 등)에서는 폴더를 읽을 수 없으니 names.json 을 목록으로 쓴다
-async function fetchStaticFrameList() {
-    try {
-        const res = await fetch(FRAME_LIST_FALLBACK, { cache: 'no-store' });
-        if (!res.ok) return [];
-        const names = await res.json();
-        return Object.keys(names).map(file => ({
-            file,
-            url: 'frame/' + encodeURIComponent(file),
-            name: names[file] || frameNameFromUrl(file)
+    FRAME_SETS = (json.sets || []).map(set => {
+        const colors = (set.colors || []).map(c => ({
+            file: c.file,
+            url: 'frame/' + c.file,
+            name: c.name || c.file.replace(/\.[a-z0-9]+$/i, ''),
+            swatch: c.swatch || null          // 없으면 PNG 배경색에서 읽는다
         }));
-    } catch (err) {
-        console.error('[frames] 프레임 목록을 읽지 못했습니다', err);
-        return [];
-    }
+        const start = colors.findIndex(c => c.file === set.default);
+        return {
+            id: set.id,
+            name: set.name || set.id,
+            desc: set.desc || '',
+            colors,
+            index: start >= 0 ? start : 0
+        };
+    }).filter(set => set.colors.length);
+
+    return FRAME_SETS;
 }
 
-function frameNameFromUrl(url) {
-    return url.split('/').pop().replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' ');
+// --- 프레임 하나 준비 ----------------------------------------------
+// 분석이 무거워서(1MP 이상 픽셀 순회) 필요한 것만, 한 번만 한다.
+function getFrame(url) {
+    if (!frameCache.has(url)) frameCache.set(url, buildFrame(url));
+    return frameCache.get(url);
 }
 
-async function buildFrame(item) {
-    const img = await loadImage(item.url);
-    const { slots, overlay } = analyzeFrameImage(img);
-    if (!slots.length) throw new Error('사진 칸을 찾지 못했습니다');
+async function buildFrame(url) {
+    const img = await loadImage(url);
+    const { slots, overlay, swatch } = analyzeFrameImage(img);
+    if (!slots.length) throw new Error('사진 칸을 찾지 못했습니다: ' + url);
 
     return {
-        id: item.url,
-        name: item.name || frameNameFromUrl(item.url),
-        src: item.url,
+        id: url,
+        url,
         width: img.naturalWidth,
         height: img.naturalHeight,
         overlay,
+        swatch,
         slots,
         slotCount: slots.length
     };
@@ -97,12 +85,6 @@ function loadImage(src) {
 }
 
 // --- 사진 칸 자동 인식 --------------------------------------------
-// 흰 픽셀 덩어리를 찾아 그 중 충분히 큰 것만 사진 칸으로 본다.
-//  · 배경까지 흰 프레임(frame2 같은)에서는 테두리의 얇은 틈으로 칸과 배경이
-//    이어져 버린다. 그래서 마스크를 몇 픽셀 깎아(erode) 그 연결을 끊고,
-//    이미지 가장자리에 닿는 덩어리는 배경으로 보고 버린다.
-//  · 칸 위에 장식이 겹쳐 흰 영역이 파먹혀도 되도록, 가장자리는 bbox 가 아니라
-//    행/열별 끝점의 20·80 퍼센타일로 잡는다.
 function analyzeFrameImage(img) {
     const W = img.naturalWidth;
     const H = img.naturalHeight;
@@ -117,20 +99,23 @@ function analyzeFrameImage(img) {
     const px = data.data;
     const total = W * H;
 
-    const white = new Uint8Array(total);
+    const light = new Uint8Array(total);
+    const sat = new Uint8Array(total);
     for (let i = 0, p = 0; i < total; i++, p += 4) {
-        if (px[p] > WIN_WHITE && px[p + 1] > WIN_WHITE && px[p + 2] > WIN_WHITE && px[p + 3] > 200) {
-            white[i] = 1;
-        }
+        const r = px[p], g = px[p + 1], b = px[p + 2];
+        const mn = r < g ? (r < b ? r : b) : (g < b ? g : b);
+        const mx = r > g ? (r > b ? r : b) : (g > b ? g : b);
+        sat[i] = mx - mn;
+        if (mn >= WIN_LIGHT_MIN && mx - mn <= WIN_NEUTRAL_MAX && px[p + 3] > 200) light[i] = 1;
     }
 
     const k = Math.max(3, Math.round(Math.min(W, H) / 250));
-    const core = erode(white, W, H, k);
+    const core = erode(light, W, H, k);
 
     const minArea = Math.max(400, Math.round(total * WIN_MIN_AREA));
     const seen = new Uint8Array(total);
     const stack = new Int32Array(total);
-    const kept = [];
+    const windows = [];
 
     for (let start = 0; start < total; start++) {
         if (!core[start] || seen[start]) continue;
@@ -154,22 +139,82 @@ function analyzeFrameImage(img) {
         }
 
         // 가장자리에 닿으면 사진 칸이 아니라 프레임 배경이다.
-        if (!onEdge && cells.length >= minArea) kept.push(cells);
+        if (!onEdge && cells.length >= minArea) windows.push(cells);
     }
 
-    const slots = kept.map(cells => rectFromCells(cells, W, H, k));
+    const slots = windows.map(cells => rectFromCells(cells, W, H, k));
 
-    // 사진이 비쳐 보일 구멍 — 깎아낸 만큼 되돌린(dilate) 뒤 원래 흰 영역과 교집합.
-    // 이렇게 하면 배경으로 새지 않으면서 손그림 테두리의 결은 그대로 남는다.
+    // 사진이 비쳐 보일 구멍 — 깎아낸 만큼 되돌린 뒤 원래 밝은 영역과 교집합.
+    const seedMask = new Uint8Array(total);
+    windows.forEach(cells => { for (let i = 0; i < cells.length; i++) seedMask[cells[i]] = 1; });
+    const grown = dilate(seedMask, W, H, k + 2);
     const hole = new Uint8Array(total);
-    kept.forEach(cells => { for (let i = 0; i < cells.length; i++) hole[cells[i]] = 1; });
-    const grown = dilate(hole, W, H, k + 2);
-    for (let i = 0; i < total; i++) {
-        if (grown[i] && white[i]) px[i * 4 + 3] = 0;
-    }
+    for (let i = 0; i < total; i++) if (grown[i] && light[i]) hole[i] = 1;
+
+    fillNeutralHoles(hole, sat, W, H);
+
+    for (let i = 0; i < total; i++) if (hole[i]) px[i * 4 + 3] = 0;
     ctx.putImageData(data, 0, 0);
 
-    return { slots: sortSlots(slots), overlay: canvas };
+    return {
+        slots: sortSlots(slots),
+        overlay: canvas,
+        swatch: cornerColor(px, W)
+    };
+}
+
+// 칸에 둘러싸인 구멍 중 '색이 거의 없는' 것만 메운다.
+// 사진 자리 표시 아이콘은 사라지고, 노란 꽃 같은 장식은 사진 위에 남는다.
+function fillNeutralHoles(hole, sat, W, H) {
+    const total = W * H;
+    const outside = new Uint8Array(total);
+    const stack = new Int32Array(total);
+    let top = 0;
+
+    const seed = i => { if (!hole[i] && !outside[i]) { outside[i] = 1; stack[top++] = i; } };
+    for (let x = 0; x < W; x++) { seed(x); seed((H - 1) * W + x); }
+    for (let y = 0; y < H; y++) { seed(y * W); seed(y * W + W - 1); }
+
+    while (top > 0) {
+        const idx = stack[--top];
+        const x = idx % W;
+        const y = (idx - x) / W;
+        if (x > 0)     seed(idx - 1);
+        if (x < W - 1) seed(idx + 1);
+        if (y > 0)     seed(idx - W);
+        if (y < H - 1) seed(idx + W);
+    }
+
+    // outside 로 못 간 비-구멍 픽셀 = 칸에 갇힌 덩어리
+    const seen = new Uint8Array(total);
+    for (let start = 0; start < total; start++) {
+        if (hole[start] || outside[start] || seen[start]) continue;
+
+        top = 0;
+        stack[top++] = start;
+        seen[start] = 1;
+        const cells = [];
+        let colored = 0;
+
+        while (top > 0) {
+            const idx = stack[--top];
+            cells.push(idx);
+            if (sat[idx] > 40) colored++;
+            const x = idx % W;
+            const y = (idx - x) / W;
+            const push = n => {
+                if (!hole[n] && !outside[n] && !seen[n]) { seen[n] = 1; stack[top++] = n; }
+            };
+            if (x > 0)     push(idx - 1);
+            if (x < W - 1) push(idx + 1);
+            if (y > 0)     push(idx - W);
+            if (y < H - 1) push(idx + W);
+        }
+
+        if (colored / cells.length < HOLE_COLOR_RATIO) {
+            for (let i = 0; i < cells.length; i++) hole[cells[i]] = 1;
+        }
+    }
 }
 
 // 4-이웃 침식 / 팽창을 k 번 반복 (마름모 구조요소)
@@ -208,7 +253,7 @@ function dilate(mask, W, H, k) {
 }
 
 // 행마다 좌·우 끝, 열마다 위·아래 끝을 모아 퍼센타일로 사각형을 잡고,
-// 침식으로 깎인 k 픽셀을 되돌린다.
+// 침식으로 깎인 k 픽셀을 되돌린다. (장식이 칸을 파먹어도 흔들리지 않게)
 function rectFromCells(cells, W, H, k) {
     const rowMin = new Int32Array(H).fill(-1);
     const rowMax = new Int32Array(H).fill(-1);
@@ -258,6 +303,12 @@ function sortSlots(slots) {
     return rows.flatMap(row => row.sort((a, b) => a.x - b.x));
 }
 
+// 색 동그라미용 — 프레임 모서리 색
+function cornerColor(px, W) {
+    const i = (3 * W + 3) * 4;
+    return `rgb(${px[i]}, ${px[i + 1]}, ${px[i + 2]})`;
+}
+
 // --- 그리기 유틸 -------------------------------------------------
 // 이미지를 영역에 cover-fit (가운데 크롭)
 function drawImageCover(ctx, img, dx, dy, dw, dh) {
@@ -300,7 +351,7 @@ function drawFrame(ctx, frame, images) {
             ctx.fillStyle = '#eceef1';
             ctx.fillRect(s.x, s.y, s.w, s.h);
             ctx.fillStyle = '#b9bec6';
-            ctx.font = `600 ${Math.round(s.h * 0.28)}px "Pretendard Variable", Pretendard, sans-serif`;
+            ctx.font = `600 ${Math.round(s.h * 0.34)}px "Pretendard Variable", Pretendard, sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(String(i + 1), s.x + s.w / 2, s.y + s.h / 2);

@@ -2,7 +2,6 @@
 // =============================================================
 // 속초고등학교 인생네컷 — 부스 서버
 //  · 정적 파일 서빙 (index.html / css / js)
-//  · GET  /api/frames  : frame/ 폴더의 프레임 PNG 목록
 //  · POST /api/upload  : 완성된 사진 저장 → QR 로 쓸 짧은 URL 반환
 //  · GET  /p/<id>      : 휴대폰에서 열리는 사진 페이지
 //  · GET  /i/<id>.png  : 원본 이미지
@@ -19,7 +18,6 @@ const crypto = require('crypto');
 
 const ROOT = __dirname;
 const UPLOAD_DIR = path.join(ROOT, 'uploads');
-const FRAME_DIR = path.join(ROOT, 'frame');
 const CERT_DIR = path.join(ROOT, 'certs');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -93,33 +91,6 @@ function readBody(req, limit) {
         req.on('end', () => resolve(Buffer.concat(chunks)));
         req.on('error', reject);
     });
-}
-
-// ── 프레임 목록 ─────────────────────────────────────────────
-// frame/ 폴더에 PNG 를 넣기만 하면 부스에 바로 뜬다.
-// 이름을 따로 붙이고 싶으면 frame/names.json 에 {"frame1.png": "네잎클로버"} 형태로 적는다.
-function handleFrames(req, res) {
-    let names = {};
-    try {
-        names = JSON.parse(fs.readFileSync(path.join(FRAME_DIR, 'names.json'), 'utf8'));
-    } catch (err) { /* 없어도 됨 */ }
-
-    let files = [];
-    try {
-        files = fs.readdirSync(FRAME_DIR)
-            .filter(f => /\.png$/i.test(f))
-            .sort((a, b) => a.localeCompare(b, 'ko', { numeric: true }));
-    } catch (err) {
-        console.warn('[frames] frame/ 폴더가 없습니다');
-    }
-
-    const frames = files.map(file => ({
-        file,
-        url: 'frame/' + encodeURIComponent(file),
-        name: names[file] || file.replace(/\.png$/i, '').replace(/[-_]+/g, ' ')
-    }));
-
-    sendJSON(res, 200, { frames });
 }
 
 // ── 업로드 ──────────────────────────────────────────────────
@@ -237,7 +208,6 @@ function handler(req, res) {
     const p = url.pathname;
 
     if (req.method === 'POST' && p === '/api/upload') return handleUpload(req, res);
-    if (req.method === 'GET' && p === '/api/frames') return handleFrames(req, res);
 
     if (req.method === 'GET' || req.method === 'HEAD') {
         let m;

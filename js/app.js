@@ -41,48 +41,112 @@ function goHome() {
 }
 
 // ===== STEP 1 · 프레임 선택 =====
+// 첫 화면에는 세트 하나당 카드 하나. 카드 안에서 색을 바꾼다.
 function renderFrameChoices() {
     const grid = document.getElementById('choiceGrid');
     grid.innerHTML = '';
 
-    if (!FRAMES.length) {
-        grid.innerHTML = '<p class="choice-empty">frame/ 폴더에 프레임 PNG를 넣어주세요.</p>';
+    if (!FRAME_SETS.length) {
+        grid.innerHTML = '<p class="choice-empty">frame/sets.json 에 프레임을 등록해 주세요.</p>';
         return;
     }
 
-    const pending = [];
-
-    FRAMES.forEach(frame => {
-        const card = document.createElement('button');
-        card.type = 'button';
+    FRAME_SETS.forEach(set => {
+        const card = document.createElement('div');
         card.className = 'choice-card';
-        card.onclick = () => chooseFrame(frame.id);
+        card.dataset.set = set.id;
 
-        const wrap = document.createElement('div');
-        wrap.className = 'choice-preview';
+        const pick = document.createElement('button');
+        pick.type = 'button';
+        pick.className = 'choice-pick';
+        pick.onclick = () => chooseSet(set.id);
         const cv = document.createElement('canvas');
-        wrap.appendChild(cv);
+        cv.className = 'choice-canvas';
+        pick.appendChild(cv);
 
         const meta = document.createElement('div');
         meta.className = 'choice-meta';
-        meta.innerHTML =
-            `<h3>${frame.name}</h3>` +
-            `<p>${frame.slotCount}컷 프레임</p>`;
+        meta.innerHTML = `<h3>${set.name}</h3><p class="choice-color-name"></p>`;
 
-        card.appendChild(wrap);
+        const swatches = document.createElement('div');
+        swatches.className = 'choice-colors';
+        set.colors.forEach((color, i) => {
+            const dot = document.createElement('button');
+            dot.type = 'button';
+            dot.className = 'swatch';
+            dot.title = color.name;
+            dot.setAttribute('aria-label', `${set.name} ${color.name}`);
+            dot.onclick = () => selectColor(set.id, i);
+            swatches.appendChild(dot);
+        });
+
+        card.appendChild(pick);
         card.appendChild(meta);
+        card.appendChild(swatches);
         grid.appendChild(card);
-        pending.push({ cv, frame, wrap });
+
+        paintSetCard(set);
+    });
+}
+
+function selectColor(setId, index) {
+    const set = FRAME_SETS.find(s => s.id === setId);
+    if (!set || set.index === index) return;
+    set.index = index;
+    paintSetCard(set);
+}
+
+// 카드 한 장을 현재 선택된 색으로 다시 그린다.
+// 프레임 분석이 무거워서 필요한 것만 그때그때 준비한다.
+async function paintSetCard(set) {
+    const card = document.querySelector(`.choice-card[data-set="${set.id}"]`);
+    if (!card) return;
+
+    const color = set.colors[set.index];
+    card.querySelector('.choice-color-name').textContent = color.name;
+    card.querySelectorAll('.swatch').forEach((dot, i) => {
+        dot.classList.toggle('is-active', i === set.index);
+        dot.setAttribute('aria-pressed', i === set.index ? 'true' : 'false');
     });
 
-    // 매트(.choice-preview)에 실제로 남는 공간을 재서 프레임 비율대로 그린다.
-    pending.forEach(({ cv, frame, wrap }) => {
-        const box = wrap.getBoundingClientRect();
-        const pad = 32;
-        renderFramePreview(cv, frame, null, {
-            maxW: Math.max(80, box.width - pad),
-            maxH: Math.max(80, box.height - pad)
-        });
+    card.classList.add('is-loading');
+    let frame;
+    try {
+        frame = await getFrame(color.url);
+    } catch (err) {
+        console.error('[frames]', err);
+        card.classList.remove('is-loading');
+        card.querySelector('.choice-color-name').textContent = '불러오지 못했어요';
+        return;
+    }
+    card.classList.remove('is-loading');
+
+    // 그리는 사이에 색이 또 바뀌었으면 버린다
+    if (set.colors[set.index].url !== color.url) return;
+
+    card.querySelectorAll('.swatch').forEach((dot, i) => {
+        const c = set.colors[i];
+        if (c.swatch) dot.style.setProperty('--sw', c.swatch);
+    });
+    const cur = card.querySelector('.swatch.is-active');
+    if (cur && !color.swatch) cur.style.setProperty('--sw', frame.swatch);
+
+    // 카드 안에 딱 맞게 — 격자형은 가로가, 세로형은 높이가 먼저 찬다
+    const cv = card.querySelector('.choice-canvas');
+    const box = cv.parentElement;
+    renderFramePreview(cv, frame, null, {
+        maxW: box.clientWidth || 280,
+        maxH: box.clientHeight || 400
+    });
+
+    // 아직 안 그려본 색의 동그라미도 배경색을 채워둔다
+    set.colors.forEach((c, i) => {
+        if (c.swatch) return;
+        getFrame(c.url).then(f => {
+            c.swatch = f.swatch;
+            const dot = card.querySelectorAll('.swatch')[i];
+            if (dot) dot.style.setProperty('--sw', f.swatch);
+        }).catch(() => {});
     });
 }
 
@@ -94,8 +158,15 @@ function goToFrameChoice() {
     showScreen('home');
 }
 
-function chooseFrame(id) {
-    state.frame = getFrame(id);
+async function chooseSet(setId) {
+    const set = FRAME_SETS.find(s => s.id === setId);
+    if (!set) return;
+    try {
+        state.frame = await getFrame(set.colors[set.index].url);
+    } catch (err) {
+        console.error('[frames]', err);
+        return;
+    }
     state.picks = [];
     showScreen('photobooth');
     initPhotoBooth();
@@ -712,8 +783,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dateEl = document.getElementById('todayDate');
     if (dateEl) dateEl.textContent = state.dateText;
 
-    await loadFrames();
-    state.frame = FRAMES[0] || null;
+    try {
+        await loadFrameSets();
+    } catch (err) {
+        console.error('[frames]', err);
+    }
     goToFrameChoice();
 });
 

@@ -200,57 +200,85 @@ body {
 .choice-grid {
     display: grid;
     /* 프레임 개수가 몇 개든 가운데 정렬로 자연스럽게 채워진다 */
-    grid-template-columns: repeat(auto-fit, minmax(200px, 280px));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 300px));
     justify-content: center;
+    align-items: start;
     gap: 16px;
     margin-top: 32px;
 }
 .choice-card {
-    appearance: none;
-    font-family: inherit;
-    text-align: left;
+    --pick-h: clamp(300px, 46vh, 440px);
     background: var(--canvas);
     border: 1px solid var(--line);
     border-radius: var(--r-card);
-    padding: 24px;
-    cursor: pointer;
-    transition: background .16s ease, border-color .16s ease;
+    padding: 20px;
+    text-align: left;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
+    transition: border-color .16s ease;
 }
-.choice-card:hover {
-    background: var(--quiet);
-    border-color: var(--ink-mute);
-}
-.choice-card:active { background: var(--accent-soft); border-color: var(--accent); }
-.choice-preview {
-    height: 320px;
+.choice-card:hover { border-color: var(--ink-mute); }
+
+/* 프레임 자체가 배경을 가지고 있으니 매트 없이 카드 폭을 꽉 채운다 */
+.choice-pick {
+    appearance: none;
+    /* 세로형·격자형이 섞여도 카드 높이가 같도록 높이를 고정하고 안에서 맞춘다 */
     display: grid;
     place-items: center;
-    background: var(--quiet);
-    border-radius: var(--r-action);
-    padding: 16px;
+    width: 100%;
+    height: var(--pick-h);
+    padding: 0;
+    background: none;
+    border: 0;
+    cursor: pointer;
 }
-.choice-preview canvas {
+.choice-canvas {
     display: block;
+    max-width: 100%;
+    max-height: var(--pick-h);
     border-radius: 4px;
     border: 1px solid var(--line);
     box-shadow: var(--shadow-photo);
+    transition: transform .16s ease;
 }
+.choice-pick:hover .choice-canvas { transform: translateY(-2px); }
+.choice-pick:active .choice-canvas { transform: none; }
+.is-loading .choice-canvas { opacity: .35; }
+
 .choice-meta h3 {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 600;
     line-height: 24px;
     color: var(--ink);
-    display: flex;
-    align-items: center;
 }
 .choice-meta p {
-    margin-top: 4px;
+    margin-top: 2px;
     font-size: 14px;
     color: var(--ink-sub);
     line-height: 1.5;
+}
+
+/* 색 고르기 */
+.choice-colors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.swatch {
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: var(--r-pill);
+    background: var(--sw, var(--quiet));
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: box-shadow .16s ease, transform .16s ease;
+}
+.swatch:hover { transform: scale(1.08); }
+.swatch.is-active {
+    box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px var(--accent);
 }
 
 /* ── 포토부스 ───────────────────────────────────────────── */
@@ -664,10 +692,6 @@ body {
 .result-actions .btn { flex: 1 1 auto; }
 
 /* ── 반응형 ─────────────────────────────────────────────── */
-@media (max-width: 1100px) {
-    .choice-preview { height: 280px; }
-}
-
 @media (max-width: 900px) {
     /* 세로 화면에서는 높이를 고정하지 않고 내용만큼만 */
     .pb-shell { height: auto; }
@@ -711,7 +735,6 @@ body {
     .select-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .select-side { flex-direction: column; align-items: stretch; }
     .select-actions { width: 100%; }
-    .choice-preview { height: 200px; padding: 12px; }
     .choice-card { padding: 12px; gap: 12px; }
     .result-inner { gap: 24px; }
     .result-canvas-wrap { padding: 12px; }
