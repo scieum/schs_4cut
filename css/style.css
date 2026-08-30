@@ -855,6 +855,33 @@ body {
 }
 .result-actions .btn { flex: 1 1 auto; }
 
+.print-status {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-sub);
+}
+.print-status.is-error { color: var(--danger); }
+.print-status[hidden] { display: none; }
+
+/* 기기 인쇄창으로 뽑을 때만 쓰는 레이어 */
+#printSheet { display: none; }
+
+/* ── 인쇄 ───────────────────────────────────────────────────
+   부스 서버가 없어 기기 인쇄창으로 뽑을 때. 화면 UI 는 전부 빼고
+   사진 한 장만 종이에 꽉 차게 올린다. */
+@media print {
+    @page { margin: 0; }
+    body { background: #fff; }
+    .screen { display: none !important; }
+    #printSheet {
+        display: block;
+        width: 100%;
+        height: 100vh;
+        object-fit: contain;
+    }
+}
+
 /* ── 반응형 ─────────────────────────────────────────────── */
 @media (max-width: 900px) {
     /* 세로 화면에서는 높이를 고정하지 않고 내용만큼만 */

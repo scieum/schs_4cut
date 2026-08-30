@@ -8,6 +8,19 @@ window.BOOTH_CONFIG = {
     schoolName: '속초고등학교',
     schoolNameEn: 'SOKCHO HIGH SCHOOL',
 
+    // 사진 인화.
+    //  프린터는 부스 기기(맥/PC)에 블루투스로 미리 연결해 둔다. 브라우저가
+    //  블루투스 프린터와 직접 말할 방법은 없어서 — 웹 블루투스는 프린터가 쓰는
+    //  클래식 SPP 를 못 쓰고 사파리(아이패드)에는 아예 없다 — 부스 서버가
+    //  기기에 잡힌 프린터로 대신 보낸다. 서버가 없으면 기기 인쇄창이 뜬다.
+    //  어느 프린터로 보낼지는 server.js 의 PRINTER 환경변수로 정한다.
+    print: {
+        enabled: true,         // 결과 화면에 프린트 버튼을 둘지
+        autoWhenReady: true,   // 프린터가 연결돼 있으면 묻지 않고 바로 뽑는다
+        copies: 1,             // 한 번에 뽑을 장수
+        endpoint: '/api/print'
+    },
+
     // 촬영 설정
     shotCount: 6,         // 총 몇 장을 찍을지 (이 중에서 프레임 칸 수만큼 고른다)
     countdownSec: 3,      // 각 컷 카운트다운

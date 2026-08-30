@@ -3,6 +3,8 @@
 // 속초고등학교 인생네컷 — 부스 서버
 //  · 정적 파일 서빙 (index.html / css / js)
 //  · POST /api/upload  : 완성된 사진 저장 → QR 로 쓸 짧은 URL 반환
+//  · GET  /api/print   : 기기에 잡힌 프린터 확인
+//  · POST /api/print   : 사진을 lp 로 보내 바로 인화 (대화상자 없음)
 //  · GET  /p/<id>      : 휴대폰에서 열리는 사진 페이지
 //  · GET  /i/<id>.png  : 원본 이미지
 //  · GET  /d/<id>.png  : 다운로드
@@ -15,6 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+const { execFile } = require('child_process');
 
 const ROOT = __dirname;
 const UPLOAD_DIR = path.join(ROOT, 'uploads');
@@ -23,6 +26,12 @@ const CERT_DIR = path.join(ROOT, 'certs');
 const PORT = Number(process.env.PORT || 3000);
 const TTL_HOURS = Number(process.env.TTL_HOURS || 12);      // 업로드 보관 시간 (0 = 삭제 안 함)
 const MAX_BYTES = 20 * 1024 * 1024;
+
+// 인화. 비우면 기기의 첫 번째(기본) 프린터로 보낸다.
+//   PRINTER=Canon_SELPHY_CP1500  node server.js
+// 이름은 `lpstat -p` 로 확인한다. PRINT_MEDIA 는 용지 크기(예: Custom.4x6in).
+const PRINTER = process.env.PRINTER || '';
+const PRINT_MEDIA = process.env.PRINT_MEDIA || '';
 
 const MIME = {
     '.html': 'text/html; charset=utf-8',
@@ -128,6 +137,72 @@ async function handleUpload(req, res) {
     sendJSON(res, 200, { id, url, image: `${baseUrl(req)}/i/${id}.png` });
 }
 
+// ── 인화 ────────────────────────────────────────────────────
+// 부스 기기에 블루투스로 붙인 사진 프린터는 macOS/리눅스에서 보통 CUPS
+// 프린터로 잡힌다. 브라우저는 프린터와 직접 말할 수 없으므로(웹 블루투스는
+// 클래식 SPP 를 못 쓰고 사파리엔 없다) 서버가 lp 로 대신 보낸다.
+// 그래서 부스에서는 인쇄 대화상자 없이 바로 나온다.
+function listPrinters() {
+    return new Promise(resolve => {
+        execFile('lpstat', ['-p'], { timeout: 4000 }, (err, stdout) => {
+            if (err) return resolve([]);
+            const names = [];
+            for (const line of String(stdout).split('\n')) {
+                const m = line.match(/^printer\s+(\S+)/);
+                if (m) names.push(m[1]);
+            }
+            resolve(names);
+        });
+    });
+}
+
+async function pickPrinter() {
+    const printers = await listPrinters();
+    if (!printers.length) return { printers, printer: '', error: '기기에 연결된 프린터가 없습니다' };
+    if (PRINTER && !printers.includes(PRINTER)) {
+        return { printers, printer: '', error: `프린터 '${PRINTER}' 를 찾을 수 없습니다` };
+    }
+    return { printers, printer: PRINTER || printers[0], error: '' };
+}
+
+async function handlePrintStatus(req, res) {
+    const { printers, printer, error } = await pickPrinter();
+    sendJSON(res, 200, { available: !!printer, printer, printers, error });
+}
+
+async function handlePrint(req, res) {
+    let buf;
+    try {
+        buf = await readBody(req, MAX_BYTES);
+    } catch (err) {
+        return sendJSON(res, 413, { error: '이미지가 너무 큽니다' });
+    }
+    if (buf.length < 100) return sendJSON(res, 400, { error: '빈 이미지' });
+
+    const { printer, error } = await pickPrinter();
+    if (!printer) return sendJSON(res, 503, { error });
+
+    const copies = Math.min(5, Math.max(1, Number(new URL(req.url, 'http://localhost').searchParams.get('copies')) || 1));
+    const file = path.join(os.tmpdir(), `schs-print-${crypto.randomBytes(4).toString('hex')}.png`);
+    fs.writeFileSync(file, buf);
+
+    // 셸을 거치지 않는 execFile 이라 파일명·프린터명이 명령으로 새지 않는다.
+    const args = ['-d', printer, '-n', String(copies), '-o', 'fit-to-page'];
+    if (PRINT_MEDIA) args.push('-o', `media=${PRINT_MEDIA}`);
+    args.push(file);
+
+    execFile('lp', args, { timeout: 30000 }, (err, stdout, stderr) => {
+        fs.unlink(file, () => {});
+        if (err) {
+            const detail = String(stderr || err.message).trim();
+            console.error('[print]', detail);
+            return sendJSON(res, 500, { error: '인쇄 명령이 실패했습니다: ' + detail });
+        }
+        console.log(`[print] ${printer} × ${copies}  ${String(stdout).trim()}`);
+        sendJSON(res, 200, { ok: true, printer, copies, job: String(stdout).trim() });
+    });
+}
+
 // ── 사진 보기 페이지 ─────────────────────────────────────────
 function viewerPage(id) {
     return `<!DOCTYPE html>
@@ -209,6 +284,7 @@ function handler(req, res) {
     const p = url.pathname;
 
     if (req.method === 'POST' && p === '/api/upload') return handleUpload(req, res);
+    if (req.method === 'POST' && p === '/api/print') return handlePrint(req, res);
 
     if (req.method === 'GET' || req.method === 'HEAD') {
         let m;
@@ -217,6 +293,7 @@ function handler(req, res) {
         }
         if ((m = p.match(/^\/i\/([a-z0-9]+)\.png$/))) return serveUpload(req, res, m[1], false);
         if ((m = p.match(/^\/d\/([a-z0-9]+)\.png$/))) return serveUpload(req, res, m[1], true);
+        if (p === '/api/print') return handlePrintStatus(req, res);
         if (p.startsWith('/uploads/')) return send(res, 403, 'Forbidden');
         return serveStatic(req, res, p);
     }

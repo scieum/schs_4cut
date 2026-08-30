@@ -620,8 +620,15 @@ function backToSelect() {
 // ===== STEP 4 · 결과 + QR =====
 async function goToResult() {
     showScreen('result');
+    setPrintStatus('');
     await composeResult();
     await shareViaQR();
+
+    // 프린터가 연결돼 있으면 누르지 않아도 바로 뽑는다.
+    if (PRINT.enabled && PRINT.autoWhenReady) {
+        const info = await checkPrinter();
+        if (info) printResult(info);
+    }
 }
 
 async function composeResult() {
@@ -652,6 +659,85 @@ function downloadResult() {
     link.download = `sokcho-4cut-${fileStamp()}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
+}
+
+// ===== 인화 =====
+// 브라우저는 블루투스 프린터와 직접 말할 수 없다. 웹 블루투스는 프린터가 쓰는
+// 클래식 SPP 를 못 다루고, 부스에서 쓰는 사파리에는 아예 없다. 그래서 프린터는
+// 부스 기기에 블루투스로 붙여 두고 두 갈래로 보낸다.
+//  1) 부스 서버(server.js)가 lp 로 보낸다 — 대화상자 없이 바로 인화된다
+//  2) 서버가 없으면 기기 인쇄창을 띄운다. 기기에 붙은 프린터가 목록에 나온다
+const PRINT = Object.assign(
+    { enabled: true, autoWhenReady: true, copies: 1, endpoint: '/api/print' },
+    CFG.print || {}
+);
+
+function setPrintStatus(text, isError) {
+    const el = document.getElementById('printStatus');
+    if (!el) return;
+    el.textContent = text || '';
+    el.hidden = !text;
+    el.classList.toggle('is-error', !!isError);
+}
+
+// 부스 서버에 프린터가 잡혀 있는지 묻는다. 서버가 아니면 조용히 null.
+async function checkPrinter() {
+    if (!PRINT.enabled || !PRINT.endpoint) return null;
+    if (location.protocol === 'file:') return null;
+    try {
+        const res = await fetch(PRINT.endpoint, { method: 'GET' });
+        if (!res.ok) return null;
+        const info = await res.json();
+        return info && info.available ? info : null;
+    } catch (err) {
+        return null;
+    }
+}
+
+async function printResult(info) {
+    if (!state.resultBlob) return;
+
+    const btn = document.getElementById('printBtn');
+    if (btn) btn.disabled = true;
+    setPrintStatus('프린터로 보내는 중…');
+
+    try {
+        if (info === undefined) info = await checkPrinter();
+
+        if (!info) return printViaBrowser();
+
+        const url = `${PRINT.endpoint}?copies=${encodeURIComponent(PRINT.copies || 1)}`;
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: state.resultBlob
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok) {
+            setPrintStatus(`${info.printer} 에서 인화하고 있어요. 잠시만 기다려 주세요.`);
+        } else {
+            setPrintStatus(data.error || '인쇄에 실패했어요.', true);
+        }
+    } catch (err) {
+        console.error('[print]', err);
+        printViaBrowser();
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+// 기기 인쇄창. 화면 UI 는 인쇄 스타일시트가 걷어내고 사진만 남는다.
+function printViaBrowser() {
+    const sheet = document.getElementById('printSheet');
+    const canvas = document.getElementById('resultCanvas');
+    if (!sheet || !canvas) return;
+
+    setPrintStatus('기기 인쇄창에서 프린터를 고르세요.');
+    sheet.src = canvas.toDataURL('image/png');
+    const go = () => window.print();
+    if (sheet.complete && sheet.naturalWidth) go();
+    else sheet.addEventListener('load', go, { once: true });
 }
 
 function retakePhotos() {
@@ -880,6 +966,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     showScreen('intro');
     fitIntro();
+
+    if (!PRINT.enabled) {
+        const btn = document.getElementById('printBtn');
+        if (btn) btn.hidden = true;
+    }
 
     document.getElementById('intro').addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') {

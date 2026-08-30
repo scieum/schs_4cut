@@ -158,13 +158,18 @@
             </div>
 
             <div class="result-actions">
+                <button class="btn btn-ghost" id="printBtn" onclick="printResult()">프린트</button>
                 <button class="btn btn-ghost" onclick="downloadResult()">이 기기에 저장</button>
                 <button class="btn btn-ghost" onclick="retakePhotos()">다시 찍기</button>
                 <button class="btn btn-primary" onclick="exitToHome()">완료</button>
             </div>
+            <p class="print-status" id="printStatus" hidden></p>
         </div>
     </div>
 </section>
+
+<!-- 기기 인쇄창으로 뽑을 때만 쓰는 레이어. 화면에는 안 보인다. -->
+<img id="printSheet" alt="">
 
 <script src="js/vendor/qrcode.js"></script>
 <script src="js/config.js"></script>
