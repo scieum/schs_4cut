@@ -3,3 +3,7 @@ uploads/*
 !uploads/.gitkeep
 certs/
 .DS_Store
+
+# 백업 스크립트가 쓰는 것들
+.env.local
+schs_4cut_backup/

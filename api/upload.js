@@ -11,7 +11,13 @@
 //       (연결 뒤에는 반드시 재배포해야 환경변수가 주입된다.)
 // =============================================================
 
+const { sweep } = require('../lib/retention');
+
 const MAX_BYTES = 20 * 1024 * 1024;
+
+// 크론은 Hobby 에서 하루 한 번뿐이라, 하루에 몰리면 그 사이에 한도를 넘길 수 있다.
+// 업로드할 때도 가끔 정리해서 용량이 계속 눌려 있게 한다.
+const SWEEP_CHANCE = 0.2;
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -49,6 +55,12 @@ module.exports = async (req, res) => {
             url: `${origin}/view.html?u=${encodeURIComponent(blob.url)}`,
             image: blob.url
         });
+
+        // 응답을 먼저 보낸 뒤에 정리한다 — QR 이 뜨는 속도에 영향을 주지 않게.
+        // 실패해도 업로드는 이미 성공했으므로 로그만 남기고 넘어간다.
+        if (Math.random() < SWEEP_CHANCE) {
+            try { await sweep('upload'); } catch (e) { console.error('[retention]', e); }
+        }
     } catch (err) {
         console.error('[upload]', err);
         res.status(500).json({ error: '업로드 실패: ' + (err.message || err) });

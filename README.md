@@ -170,6 +170,67 @@ SDK 가 알려준 사유가 그대로 표시되니 그걸 보고 조치하면 �
 
 Blob 대신 Cloudinary를 쓰려면 [js/config.js](js/config.js) 의 `upload.mode` 를 `'cloudinary'` 로 바꾸면 됩니다.
 
+---
+
+## 사진 보관 정책 · 백업
+
+Hobby 플랜은 저장 한도를 넘기면 요금이 붙는 게 아니라 **30일간 Blob 접근이 막힙니다.**
+축제 도중 그렇게 되면 QR이 통째로 죽으므로, 사진을 자동으로 줄입니다.
+
+### 언제 지워지나
+
+[lib/retention.js](lib/retention.js) 가 두 기준으로 **오래된 것부터** 지웁니다.
+
+| 환경변수 | 기본값 | 뜻 |
+|---|---|---|
+| `PHOTO_TTL_HOURS` | `24` | 올라온 지 이만큼 지난 사진을 지운다 (`0` 이면 안 지움) |
+| `PHOTO_MAX_MB` | `700` | 전체 크기가 이만큼을 넘으면 넘긴 만큼 오래된 것부터 (`0` 이면 안 지움) |
+
+값을 바꾸려면 Vercel 프로젝트의 Environment Variables 에 넣고 재배포하면 됩니다.
+
+실행되는 시점은 두 군데입니다.
+
+- **하루 한 번** — [vercel.json](vercel.json) 의 크론이 03:00 KST 에 [api/cleanup.js](api/cleanup.js) 를 부릅니다.
+  Hobby 는 하루 1회에 ±59분 오차라, 사진 수명은 실제로 24~48시간 사이입니다.
+- **업로드할 때 가끔** — 크론만으로는 하루에 몰릴 때 늦습니다. 그래서 업로드 5번 중 1번꼴로
+  같은 정리를 돌려 용량을 계속 눌러 둡니다 ([api/upload.js](api/upload.js) 의 `SWEEP_CHANCE`).
+  QR 응답을 먼저 보낸 뒤에 도는 방식이라 촬영 속도에는 영향이 없습니다.
+
+`CRON_SECRET` 을 환경변수에 넣어두면 크론 외의 호출을 막습니다. 손으로 돌릴 때는:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://schs-4cut.vercel.app/api/cleanup
+```
+
+[view.html](view.html) 에는 "이 링크는 하루 뒤에 사라져요" 안내가 뜹니다.
+
+### 지워지기 전에 내 컴퓨터로 받아두기
+
+Vercel 이 내 컴퓨터로 파일을 보낼 수는 없으므로, **내 컴퓨터가 서버를 훑어 받아옵니다.**
+
+먼저 토큰을 준비합니다. Vercel 대시보드 → Storage → 스토어 → **Tokens** 에서 read-write 토큰을
+발급받아 프로젝트 루트에 `.env.local` 을 만들고 넣으세요. (이 파일은 git 에 올라가지 않습니다)
+
+```
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
+```
+
+그리고:
+
+```bash
+npm install                      # 처음 한 번
+npm run backup                   # 한 번 훑고 끝
+npm run backup -- --watch        # 60초마다 반복 — 부스 운영 중에 켜 두는 용도
+npm run backup -- --out ~/사진백업 --every 30
+```
+
+기본 저장 위치는 `~/schs_4cut_backup/` 이고, 이미 받은 파일은 건너뛰므로 몇 번을 돌려도 안전합니다.
+파일 수정 시각은 서버의 업로드 시각으로 맞춰집니다.
+
+> **운영 팁** — 백업은 내 맥이 켜져 있고 스크립트가 돌고 있을 때만 됩니다.
+> 행사 중에는 `npm run backup -- --watch` 를 터미널에 띄워두고, 끝난 뒤 한 번 더 돌려서 마지막 사진까지 챙기세요.
+> 백업 폴더는 OneDrive 같은 동기화 폴더 **밖**에 두는 것을 권합니다.
+
 배포 후 `/` 가 404 라면 Vercel 프로젝트 설정에서
 **Framework Preset = Other**, **Root Directory = `./`**, **Build Command 비움**,
 **Output Directory 비움** 인지 확인하세요. 저장소의 [vercel.json](vercel.json) 이 같은 값을 지정하고 있습니다.
@@ -208,6 +269,9 @@ intervalSec: 2                     // 컷 사이 포즈 바꾸는 시간
 │   └── vendor/
 │       └── qrcode.js   QR 인코더 (Kazuhiko Arase, MIT)
 ├── api/upload.js       Vercel 서버리스 업로드 (Vercel Blob)
+├── api/cleanup.js      보관 정책 실행 (하루 1회 크론)
+├── lib/retention.js    오래된 사진 고르는 규칙 (기한 + 용량)
+├── scripts/backup.js   서버 사진을 내 컴퓨터로 내려받기
 ├── view.html           Vercel용 사진 보기 페이지
 ├── server.js           로컬 부스 서버 — 정적 서빙 + 업로드 + 사진 페이지 (의존성 없음)
 ├── vercel.json         정적 배포 설정

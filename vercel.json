@@ -3,5 +3,8 @@
   "framework": null,
   "outputDirectory": ".",
   "cleanUrls": false,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "crons": [
+    { "path": "/api/cleanup", "schedule": "0 18 * * *" }
+  ]
 }

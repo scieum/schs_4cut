@@ -27,6 +27,9 @@
   a.btn.ghost{background:#fff;border-color:rgba(0,0,0,.1);color:rgba(0,0,0,.95)}
   a.btn.ghost:active{background:#e6f3fe;color:#005bab}
   .err{color:#c8402d}
+  .expiry{font-size:13px;color:#8a7a55;background:#fdf6e3;border:1px solid #f0e3bd;
+          border-radius:8px;padding:10px 16px}
+  .expiry b{color:#7a6a45}
 </style>
 </head>
 <body>
@@ -34,6 +37,7 @@
   <div class="photo" id="photo"></div>
   <div class="actions" id="actions"></div>
   <p id="note">아이폰에서는 사진을 길게 눌러<br>&ldquo;사진에 추가&rdquo;를 선택해도 저장돼요.</p>
+  <p id="expiry" class="expiry">이 링크는 <b>하루 뒤에 사라져요.</b><br>지금 저장해 주세요.</p>
 
 <script>
 // ?u=<이미지 주소> 로 열린다. 부스가 올린 사진만 보여주면 되므로
@@ -52,6 +56,7 @@
     if (!src) {
         document.getElementById('note').className = 'err';
         document.getElementById('note').textContent = '사진 주소가 없어요. QR을 다시 찍어주세요.';
+        document.getElementById('expiry').hidden = true;
         return;
     }
 
