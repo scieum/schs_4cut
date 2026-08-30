@@ -507,7 +507,8 @@ body {
 .select-grid {
     flex: 1 1 auto;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* 6컷을 3 × 2 로 떨어지게 */
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
 }
 .shot-card {
@@ -704,7 +705,7 @@ body {
     .pb-side { overflow: visible; }
 
     .select-body { flex-direction: column; }
-    .select-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .select-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .select-side {
         flex: none;
         width: 100%;
