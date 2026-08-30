@@ -110,6 +110,11 @@ function readStream(req) {
 }
 
 function siteOrigin(req) {
+    // 배포별 미리보기 주소는 Vercel 로그인으로 보호돼서, 그 주소가 QR 에 박히면
+    // 학생 폰에서 가입 화면을 만난다. QR 은 언제나 공개된 프로덕션 도메인을 가리켜야 한다.
+    const prod = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    if (prod) return `https://${prod}`;
+
     const proto = req.headers['x-forwarded-proto'] || 'https';
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     return `${proto}://${host}`;
