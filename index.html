@@ -13,9 +13,11 @@
 
 <!-- ══════════════ 인트로 ══════════════ -->
 <section id="intro" class="screen active">
+    <!-- Spline 장면이 들어가는 자리. js/config.js 의 intro.splineUrl 이 비어 있으면 그대로 빈 채로 둔다. -->
+    <div class="intro-motion" id="introMotion" aria-hidden="true"></div>
+
     <div class="intro-inner">
         <img class="intro-logo" src="schs_flim_logo.png" alt="Schs flim" width="2172" height="724">
-        <p class="intro-sub">속초고등학교 인생네컷</p>
         <button class="btn btn-primary intro-start" onclick="startBooth()">촬영하기</button>
         <p class="intro-date" id="introDate"></p>
     </div>

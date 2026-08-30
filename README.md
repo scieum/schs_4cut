@@ -244,12 +244,31 @@ npm run backup -- --out ~/사진백업 --every 30
 ```js
 schoolName: '속초고등학교',        // 화면 상단 표시용
 schoolNameEn: 'SOKCHO HIGH SCHOOL',
+intro: { splineUrl: '' },          // 인트로 배경 3D (비우면 로고만)
 shotCount: 6,                      // 총 촬영 컷 수 (고르는 장수는 프레임이 정함)
 countdownSec: 3,                   // 컷마다 카운트다운
 intervalSec: 2                     // 컷 사이 포즈 바꾸는 시간
 ```
 
 고르는 장수는 설정이 아니라 **프레임 PNG에서 찾은 칸 개수**로 정해집니다.
+
+### 인트로 배경 3D (Spline)
+
+Spline 편집기의 `app.spline.design/file/...` 주소는 **편집용이라 삽입되지 않습니다.**
+편집기에서 **Export → Code (Vanilla JS)** 를 열면 나오는
+
+```
+https://prod.spline.design/<아이디>/scene.splinecode
+```
+
+이 주소를 `intro.splineUrl` 에 넣으면 켜집니다. 비워두면 로고만 있는 인트로 그대로입니다.
+
+부스에서 쓰는 기능이라 실패해도 촬영은 되도록 만들었습니다.
+
+- 로고 인트로를 먼저 띄운 뒤에 장면을 얹습니다 — 3D 가 늦어도 버튼은 바로 눌립니다
+- CDN 이 막히거나(학교망에서 종종 있습니다) 장면 주소가 틀리면 로고만 남습니다
+- 기기 설정이 "동작 줄이기" 면 켜지 않습니다
+- 장면 위에서도 글자가 읽히도록, 모션이 켜졌을 때만 로고·버튼 뒤에 반투명 판이 깔립니다
 
 ---
 

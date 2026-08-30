@@ -517,7 +517,28 @@ body {
 /* ── STEP 3 · 사진 고르기 ────────────────────────────────── */
 /* ── 인트로 ─────────────────────────────────────────────
    부스 대기 화면. 로고를 크게 두고 촬영하기 하나만 남긴다. */
+/* Spline 장면은 배경 레이어. 장면이 없으면 이 칸은 비어 있고 아무 영향도 없다. */
+#intro { position: relative; overflow: hidden; }
+.intro-motion {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;   /* 배경일 뿐이라 터치는 버튼으로 흘려보낸다 */
+}
+.intro-motion spline-viewer { display: block; width: 100%; height: 100%; }
+
+/* 장면 위에서도 로고와 버튼이 읽히도록, 모션이 켜졌을 때만 유리판을 깐다 */
+#intro.has-motion .intro-inner {
+    padding: 40px 32px;
+    border-radius: var(--r-card);
+    background: rgba(255, 255, 255, .72);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
 .intro-inner {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -531,13 +552,6 @@ body {
     width: 100%;
     max-width: 420px;
     height: auto;
-}
-.intro-sub {
-    font-size: 15px;
-    font-weight: 500;
-    letter-spacing: .04em;
-    color: var(--ink-sub);
-    margin-top: -12px;   /* 로고 글자와 한 덩어리로 보이게 */
 }
 /* 부스에서 장갑 낀 손으로도 눌리도록 크게 */
 .intro-start {

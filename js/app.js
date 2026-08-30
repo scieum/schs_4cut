@@ -45,6 +45,44 @@ function startBooth() {
     goToFrameChoice();
 }
 
+// ===== 인트로 배경 모션 (Spline) =====
+// 부스 화면이라 3D 가 실패해도 촬영은 되어야 한다. 그래서 로고 인트로를
+// 먼저 완성해 두고, 장면은 나중에 얹기만 한다. 실패하면 로고만 남는다.
+const SPLINE_VIEWER =
+    'https://cdn.jsdelivr.net/npm/@splinetool/viewer@2.0.14/build/spline-viewer.js';
+
+function loadModule(src) {
+    return new Promise((resolve, reject) => {
+        const el = document.createElement('script');
+        el.type = 'module';
+        el.src = src;
+        el.onload = resolve;
+        el.onerror = () => reject(new Error('불러오지 못했습니다: ' + src));
+        document.head.appendChild(el);
+    });
+}
+
+async function initIntroMotion() {
+    const url = (CFG.intro && CFG.intro.splineUrl) || '';
+    if (!url) return;
+
+    // 움직임을 줄이도록 설정한 기기에서는 켜지 않는다
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    try {
+        await loadModule(SPLINE_VIEWER);
+
+        const viewer = document.createElement('spline-viewer');
+        viewer.setAttribute('url', url);
+        viewer.setAttribute('loading-anim-type', 'none');
+
+        document.getElementById('introMotion').appendChild(viewer);
+        document.getElementById('intro').classList.add('has-motion');
+    } catch (err) {
+        console.error('[intro-motion]', err);   // 로고만 있는 인트로로 남는다
+    }
+}
+
 // 촬영 도중 되돌아갈 때는 인트로가 아니라 프레임 선택으로 간다.
 function goHome() {
     stopCamera();
@@ -816,6 +854,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('[frames]', err);
     }
     showScreen('intro');
+    initIntroMotion();   // 실패해도 인트로는 이미 떠 있다
 });
 
 window.addEventListener('resize', () => {
