@@ -485,6 +485,51 @@ body {
 .btn-shutter { width: 100%; }
 
 /* ── STEP 3 · 사진 고르기 ────────────────────────────────── */
+/* ── 인트로 ─────────────────────────────────────────────
+   부스 대기 화면. 로고를 크게 두고 촬영하기 하나만 남긴다. */
+.intro-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+    width: 100%;
+    max-width: 560px;
+    text-align: center;
+}
+.intro-logo {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+}
+.intro-sub {
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: .04em;
+    color: var(--ink-sub);
+    margin-top: -12px;   /* 로고 글자와 한 덩어리로 보이게 */
+}
+/* 부스에서 장갑 낀 손으로도 눌리도록 크게 */
+.intro-start {
+    min-width: 260px;
+    padding: 18px 40px;
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 26px;
+    border-radius: var(--r-card);
+}
+.intro-date {
+    font-size: 13px;
+    color: var(--ink-mute);
+    letter-spacing: .06em;
+}
+
+@media (max-width: 560px) {
+    .intro-inner { gap: 24px; }
+    .intro-logo { max-width: 280px; }
+    .intro-start { min-width: 0; width: 100%; }
+}
+
 .select-inner {
     width: 100%;
     max-width: 1180px;

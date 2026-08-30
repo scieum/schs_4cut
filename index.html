@@ -11,8 +11,18 @@
 </head>
 <body>
 
-<!-- ══════════════ 홈 = STEP 1 · 프레임 선택 ══════════════ -->
-<section id="home" class="screen active">
+<!-- ══════════════ 인트로 ══════════════ -->
+<section id="intro" class="screen active">
+    <div class="intro-inner">
+        <img class="intro-logo" src="schs_flim_logo.png" alt="Schs flim" width="2172" height="724">
+        <p class="intro-sub">속초고등학교 인생네컷</p>
+        <button class="btn btn-primary intro-start" onclick="startBooth()">촬영하기</button>
+        <p class="intro-date" id="introDate"></p>
+    </div>
+</section>
+
+<!-- ══════════════ STEP 1 · 프레임 선택 ══════════════ -->
+<section id="home" class="screen">
     <header class="topbar">
         <span class="brand-mark">SOKCHO HIGH SCHOOL</span>
         <span class="brand-date" id="todayDate"></span>

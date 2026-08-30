@@ -34,7 +34,18 @@ function showScreen(id) {
     window.scrollTo(0, 0);
 }
 
-// 첫 화면이 곧 프레임 선택 화면이다.
+// 부스는 인트로에서 시작해서, 한 사람이 끝나면 인트로로 돌아온다.
+function goToIntro() {
+    stopCamera();
+    showScreen('intro');
+}
+
+// 인트로의 "촬영하기"
+function startBooth() {
+    goToFrameChoice();
+}
+
+// 촬영 도중 되돌아갈 때는 인트로가 아니라 프레임 선택으로 간다.
 function goHome() {
     stopCamera();
     goToFrameChoice();
@@ -593,8 +604,7 @@ function retakePhotos() {
 
 function exitToHome() {
     state.shareUrl = null;
-    stopCamera();
-    goHome();
+    goToIntro();
 }
 
 // --- 업로드 → QR ---
@@ -795,15 +805,17 @@ function drawQR(canvas, text) {
 // ===== 시작 =====
 document.addEventListener('DOMContentLoaded', async () => {
     state.dateText = todayText();
-    const dateEl = document.getElementById('todayDate');
-    if (dateEl) dateEl.textContent = state.dateText;
+    document.querySelectorAll('#todayDate, #introDate').forEach(el => {
+        el.textContent = state.dateText;
+    });
 
+    // 프레임은 미리 읽어둔다. 촬영하기를 누른 뒤 기다리지 않게.
     try {
         await loadFrameSets();
     } catch (err) {
         console.error('[frames]', err);
     }
-    goToFrameChoice();
+    showScreen('intro');
 });
 
 window.addEventListener('resize', () => {
