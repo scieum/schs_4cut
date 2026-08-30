@@ -501,7 +501,8 @@ body {
 .select-body {
     display: flex;
     gap: 24px;
-    align-items: flex-start;
+    /* 양쪽 컬럼을 같은 높이로 — 미리보기가 그리드보다 아래로 튀어나오지 않게 */
+    align-items: stretch;
     margin-top: 32px;
 }
 .select-grid {
@@ -510,6 +511,7 @@ body {
     /* 6컷을 3 × 2 로 떨어지게 */
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
+    align-content: start;
 }
 .shot-card {
     position: relative;
@@ -560,11 +562,22 @@ body {
 }
 .select-preview-wrap {
     display: grid;
+    /* 행을 auto 로 두면 캔버스 원본 높이만큼 늘어나 max-height:100% 가 무의미해진다 */
+    grid-template-rows: minmax(0, 1fr);
     place-items: center;
     width: 100%;
+    /* 남는 높이를 미리보기가 차지하되, 모자라면 줄어든다.
+       flex-basis 를 0 으로 둬야 높이가 확정돼 캔버스의 max-height:100% 가 먹는다 */
+    flex: 1 1 0;
+    min-height: 200px;
 }
 .select-preview {
     display: block;
+    /* 캔버스 원본 비율을 유지한 채 칸 안에 맞춘다 */
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
     border-radius: 4px;
     border: 1px solid var(--line);
     box-shadow: var(--shadow-photo);
