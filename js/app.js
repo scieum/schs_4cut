@@ -707,9 +707,11 @@ async function uploadResult(blob, mode) {
 async function uploadLocal(blob, conf) {
     const endpoint = (conf && conf.endpoint) || '/api/upload';
     if (location.protocol === 'file:') throw new Error('file:// 에서는 로컬 업로드 불가');
+    // Vercel 서버리스는 image/png 를 body 로 파싱해 주지 않는다.
+    // octet-stream 으로 보내야 양쪽(server.js / api/upload.js) 모두 원본 그대로 받는다.
     const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'image/png' },
+        headers: { 'Content-Type': 'application/octet-stream' },
         body: blob
     });
     if (!res.ok) {

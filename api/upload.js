@@ -79,6 +79,15 @@ async function readImage(req) {
         return fromDataUrl(body);
     }
 
+    // 런타임이 이미 스트림을 소진했다면 여기서 기다려봐야 타임아웃뿐이다.
+    // 원인을 그대로 알려줘야 부스에서 바로 조치할 수 있다.
+    if (req.readableEnded || req.readable === false) {
+        throw new Error(
+            'Content-Type 을 application/octet-stream 또는 application/json 으로 보내주세요 ' +
+            '(받은 값: ' + (req.headers['content-type'] || '없음') + ')'
+        );
+    }
+
     return await readStream(req);
 }
 
