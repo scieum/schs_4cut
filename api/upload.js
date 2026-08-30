@@ -5,8 +5,10 @@
 // server.js(로컬 부스 서버)의 /api/upload 와 같은 응답 모양이라
 // 프론트엔드는 어느 쪽에 올라가 있든 그대로 동작한다.
 //
-// 준비: Vercel 대시보드 → Storage → Blob 스토어를 만들고 프로젝트에 연결하면
-//       BLOB_READ_WRITE_TOKEN 이 자동으로 주입된다. (Hobby 플랜 포함)
+// 준비: Vercel 대시보드 → Storage → Blob 스토어를 만들어 프로젝트에 연결한다.
+//       @vercel/blob v2 는 Vercel 위에서 OIDC 로 인증하므로 BLOB_STORE_ID 만 있으면 되고,
+//       BLOB_READ_WRITE_TOKEN 은 없어도 된다. 자격증명 확인은 SDK 에 맡긴다.
+//       (연결 뒤에는 반드시 재배포해야 환경변수가 주입된다.)
 // =============================================================
 
 const MAX_BYTES = 20 * 1024 * 1024;
@@ -16,14 +18,6 @@ module.exports = async (req, res) => {
         res.status(405).json({ error: 'POST 만 받습니다' });
         return;
     }
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-        res.status(503).json({
-            error: 'Blob 스토어가 연결되어 있지 않습니다. Vercel 대시보드 → Storage → Blob 에서 ' +
-                   '스토어를 만들어 이 프로젝트에 연결해 주세요.'
-        });
-        return;
-    }
-
     let buf;
     try {
         buf = await readImage(req);
