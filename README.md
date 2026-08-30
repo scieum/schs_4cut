@@ -154,8 +154,19 @@ upload: {
 | 카메라 | `localhost` 라서 허용 | HTTPS 라서 허용 (아이패드도 OK) |
 
 **한 번만 해두면 되는 설정** — Vercel 대시보드 → **Storage → Blob** 에서 스토어를 만들고
-이 프로젝트에 연결하세요. `BLOB_READ_WRITE_TOKEN` 이 자동으로 주입되고 그 뒤로는 QR이 바로 됩니다.
-(Hobby 플랜에 포함) 연결하지 않으면 결과 화면에 "Blob 스토어가 연결되어 있지 않습니다" 라고 뜹니다.
+이 프로젝트에 연결한 뒤 **재배포**하세요. (Hobby 플랜에 포함)
+
+주의할 점 두 가지:
+
+- 스토어를 **public access** 로 만들어야 합니다. `api/upload.js` 는 `access: 'public'` 으로
+  올리는데, private 스토어에 그러면 `Cannot use public access on a private store` 가 납니다.
+  access 모드는 생성할 때 정해지고 나중에 못 바꾸니, private 으로 만들었다면 스토어를 새로 만들어야 합니다.
+- 환경변수는 **배포가 시작될 때** 주입됩니다. 연결만 하고 재배포하지 않으면 이미 떠 있는 배포에는
+  반영되지 않습니다.
+
+`@vercel/blob` v2 는 Vercel 위에서 OIDC 로 인증하므로 `BLOB_STORE_ID` 만 있으면 되고,
+`BLOB_READ_WRITE_TOKEN` 은 없어도 됩니다. 업로드가 실패하면 결과 화면 QR 자리에
+SDK 가 알려준 사유가 그대로 표시되니 그걸 보고 조치하면 됩니다.
 
 Blob 대신 Cloudinary를 쓰려면 [js/config.js](js/config.js) 의 `upload.mode` 를 `'cloudinary'` 로 바꾸면 됩니다.
 
