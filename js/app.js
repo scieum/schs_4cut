@@ -3,13 +3,13 @@
 // =============================================================
 
 const CFG = window.BOOTH_CONFIG;
-const SHOT_COUNT = CFG.shotCount || 8;
+const SHOT_COUNT = CFG.shotCount || 6;
 
 const state = {
     frame: null,
     stream: null,
     video: null,
-    shots: [],          // 촬영된 canvas 8장
+    shots: [],          // 촬영된 canvas 6장
     picks: [],          // 그 중 고른 인덱스 — 누른 순서가 곧 프레임 순서
     shooting: false,
     aborted: false,
@@ -183,7 +183,7 @@ function applyShotRatio() {
 
 function updateSidePreview() {
     const compact = window.matchMedia('(max-width: 900px)').matches;
-    // 8장을 찍은 뒤 고르는 방식이라, 촬영 중에는 프레임 모양만 보여준다.
+    // 6장을 찍은 뒤 고르는 방식이라, 촬영 중에는 프레임 모양만 보여준다.
     renderFramePreview(
         document.getElementById('pbPreviewCanvas'),
         state.frame,
@@ -444,7 +444,7 @@ function stopCamera() {
 }
 
 // ===== STEP 3 · 사진 고르기 =====
-// 8장 중에서 프레임 칸 수만큼, 누른 순서대로 고른다.
+// 6장 중에서 프레임 칸 수만큼, 누른 순서대로 고른다.
 function goToSelect() {
     state.picks = [];
     showScreen('select');

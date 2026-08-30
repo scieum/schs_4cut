@@ -9,7 +9,7 @@ window.BOOTH_CONFIG = {
     schoolNameEn: 'SOKCHO HIGH SCHOOL',
 
     // 촬영 설정
-    shotCount: 8,         // 총 몇 장을 찍을지 (이 중에서 프레임 칸 수만큼 고른다)
+    shotCount: 6,         // 총 몇 장을 찍을지 (이 중에서 프레임 칸 수만큼 고른다)
     countdownSec: 3,      // 각 컷 카운트다운
     intervalSec: 2,       // 컷 사이 쉬는 시간 (포즈 바꾸는 시간)
 
