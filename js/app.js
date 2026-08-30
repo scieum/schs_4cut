@@ -38,48 +38,47 @@ function showScreen(id) {
 function goToIntro() {
     stopCamera();
     showScreen('intro');
+    fitIntroLines();
 }
 
-// 인트로의 "촬영하기"
+// 인트로는 화면 아무 데나 누르면 넘어간다.
+let boothStarting = false;
+
 function startBooth() {
-    goToFrameChoice();
-}
-
-// ===== 인트로 배경 모션 (Spline) =====
-// 부스 화면이라 3D 가 실패해도 촬영은 되어야 한다. 그래서 로고 인트로를
-// 먼저 완성해 두고, 장면은 나중에 얹기만 한다. 실패하면 로고만 남는다.
-const SPLINE_VIEWER =
-    'https://cdn.jsdelivr.net/npm/@splinetool/viewer@2.0.14/build/spline-viewer.js';
-
-function loadModule(src) {
-    return new Promise((resolve, reject) => {
-        const el = document.createElement('script');
-        el.type = 'module';
-        el.src = src;
-        el.onload = resolve;
-        el.onerror = () => reject(new Error('불러오지 못했습니다: ' + src));
-        document.head.appendChild(el);
-    });
-}
-
-async function initIntroMotion() {
-    const url = (CFG.intro && CFG.intro.splineUrl) || '';
-    if (!url) return;
-
-    // 움직임을 줄이도록 설정한 기기에서는 켜지 않는다
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
+    if (boothStarting) return;
+    boothStarting = true;
     try {
-        await loadModule(SPLINE_VIEWER);
+        goToFrameChoice();
+    } finally {
+        boothStarting = false;
+    }
+}
 
-        const viewer = document.createElement('spline-viewer');
-        viewer.setAttribute('url', url);
-        viewer.setAttribute('loading-anim-type', 'none');
+// 인트로 헤드라인을 화면 폭에 꽉 차게 맞춘다.
+// 줄마다 글자 수가 달라 줄 단위로 크기를 계산한다.
+function fitIntroLines() {
+    const inner = document.querySelector('#intro .intro-inner');
+    const lines = document.getElementById('introLines');
+    if (!inner || !lines) return;
 
-        document.getElementById('introMotion').appendChild(viewer);
-        document.getElementById('intro').classList.add('has-motion');
-    } catch (err) {
-        console.error('[intro-motion]', err);   // 로고만 있는 인트로로 남는다
+    const avail = lines.clientWidth;
+    if (!avail) return;                      // 인트로가 숨어 있으면 건너뛴다
+
+    const fitted = [];
+    lines.querySelectorAll('.intro-line span').forEach(span => {
+        span.style.fontSize = '100px';       // 기준 크기로 재고 비례식으로 환산
+        const w = span.getBoundingClientRect().width;
+        if (!w) return;
+        fitted.push({ span, size: 100 * avail / w });
+    });
+    fitted.forEach(f => { f.span.style.fontSize = f.size + 'px'; });
+
+    // 세로로 넘치면 넘친 만큼 헤드라인만 줄인다.
+    const overflow = inner.getBoundingClientRect().height - window.innerHeight;
+    if (overflow > 0) {
+        const lh = lines.getBoundingClientRect().height;
+        const k = Math.max(0.4, (lh - overflow) / lh);
+        fitted.forEach(f => { f.span.style.fontSize = (f.size * k) + 'px'; });
     }
 }
 
@@ -841,7 +840,12 @@ function drawQR(canvas, text) {
 }
 
 // ===== 시작 =====
+if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(fitIntroLines);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    fitIntroLines();
     state.dateText = todayText();
     document.querySelectorAll('#todayDate, #introDate').forEach(el => {
         el.textContent = state.dateText;
@@ -854,7 +858,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('[frames]', err);
     }
     showScreen('intro');
-    initIntroMotion();   // 실패해도 인트로는 이미 떠 있다
+    fitIntroLines();
+
+    document.getElementById('intro').addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            startBooth();
+        }
+    });
 });
 
 window.addEventListener('resize', () => {
@@ -866,5 +877,7 @@ window.addEventListener('resize', () => {
         if (home && home.classList.contains('active')) renderFrameChoices();
         const select = document.getElementById('select');
         if (select && select.classList.contains('active')) updateSelection();
+        const intro = document.getElementById('intro');
+        if (intro && intro.classList.contains('active')) fitIntroLines();
     }, 200);
 });

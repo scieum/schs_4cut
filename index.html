@@ -7,19 +7,30 @@
     <title>속초고등학교 인생네컷</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23ffffff'/%3E%3Crect x='8' y='5' width='16' height='22' rx='2' fill='%23ffffff' stroke='rgba(0,0,0,0.1)'/%3E%3Crect x='10' y='7' width='12' height='7' rx='1' fill='%230075de'/%3E%3Crect x='10' y='15' width='12' height='7' rx='1' fill='%230075de'/%3E%3C/svg%3E">
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <!-- ══════════════ 인트로 ══════════════ -->
-<section id="intro" class="screen active">
-    <!-- Spline 장면이 들어가는 자리. js/config.js 의 intro.splineUrl 이 비어 있으면 그대로 빈 채로 둔다. -->
-    <div class="intro-motion" id="introMotion" aria-hidden="true"></div>
-
+<section id="intro" class="screen active" role="button" tabindex="0"
+         aria-label="화면을 누르면 촬영을 시작합니다" onclick="startBooth()">
     <div class="intro-inner">
-        <img class="intro-logo" src="schs_flim_logo.png" alt="Schs flim" width="2172" height="724">
-        <button class="btn btn-primary intro-start" onclick="startBooth()">촬영하기</button>
-        <p class="intro-date" id="introDate"></p>
+        <img class="intro-mark" src="assets/intro/schs-mark.svg" alt="" width="86" height="45">
+
+        <div class="intro-lines" id="introLines">
+            <p class="intro-line intro-line-1"><span>Where every moment</span></p>
+            <p class="intro-line intro-line-2"><span>at SOKCHO HIGH SCHOOL</span></p>
+            <p class="intro-line intro-line-3"><span>becomes a memory.</span></p>
+            <img class="intro-camera" src="assets/intro/camera.webp" alt="" width="640" height="640">
+        </div>
+
+        <div class="intro-foot">
+            <img class="intro-logo" src="schs_flim_logo.png" alt="Schs flim" width="2172" height="724">
+            <p class="intro-date" id="introDate"></p>
+        </div>
     </div>
 </section>
 

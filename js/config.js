@@ -8,12 +8,6 @@ window.BOOTH_CONFIG = {
     schoolName: '속초고등학교',
     schoolNameEn: 'SOKCHO HIGH SCHOOL',
 
-    // 인트로 배경에 넣을 Spline 3D 장면.
-    //  Spline 편집기 → Export → Code(Vanilla JS) 에 나오는
-    //  https://prod.spline.design/.../scene.splinecode 주소를 넣으면 켜진다.
-    //  비워두면 로고만 있는 인트로 그대로다.
-    intro: { splineUrl: '' },
-
     // 촬영 설정
     shotCount: 6,         // 총 몇 장을 찍을지 (이 중에서 프레임 칸 수만큼 고른다)
     countdownSec: 3,      // 각 컷 카운트다운

@@ -516,62 +516,109 @@ body {
 
 /* ── STEP 3 · 사진 고르기 ────────────────────────────────── */
 /* ── 인트로 ─────────────────────────────────────────────
-   부스 대기 화면. 로고를 크게 두고 촬영하기 하나만 남긴다. */
-/* Spline 장면은 배경 레이어. 장면이 없으면 이 칸은 비어 있고 아무 영향도 없다. */
-#intro { position: relative; overflow: hidden; }
-.intro-motion {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;   /* 배경일 뿐이라 터치는 버튼으로 흘려보낸다 */
+   Figma "Schs film" 랜딩 히어로. 부스 대기 화면이라 버튼 없이
+   화면 아무 데나 누르면 촬영으로 넘어간다. */
+#intro {
+    position: relative;
+    overflow-x: hidden;
+    padding: 0;
+    background: #090909;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
-.intro-motion spline-viewer { display: block; width: 100%; height: 100%; }
-
-/* 장면 위에서도 로고와 버튼이 읽히도록, 모션이 켜졌을 때만 유리판을 깐다 */
-#intro.has-motion .intro-inner {
-    padding: 40px 32px;
-    border-radius: var(--r-card);
-    background: rgba(255, 255, 255, .72);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+#intro:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .7);
 }
 
 .intro-inner {
     position: relative;
-    z-index: 1;
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 32px;
-    width: 100%;
-    max-width: 560px;
+    justify-content: center;
+    /* 화면이 낮으면 여백부터 줄여, 글자가 폭을 그대로 유지하게 */
+    gap: clamp(28px, 7vh, 80px);
+    padding: clamp(28px, 7vh, 80px) 24px;
+    font-family: "Instrument Serif", "Times New Roman", Times, serif;
+    font-weight: 400;
+    line-height: 1;
     text-align: center;
+}
+
+/* 상단 ( ✳ ) 마크 */
+.intro-mark {
+    display: block;
+    flex-shrink: 0;
+    width: 61.94px;
+    height: 32.51px;
+}
+
+/* 헤드라인 3줄 + 그 위에 겹치는 카메라 */
+.intro-lines {
+    position: relative;
+    flex-shrink: 0;
+    width: 100%;
+}
+.intro-line {
+    font-size: 0;              /* 태그 사이 공백이 가운데 정렬을 밀지 않도록 */
+    color: #fff;
+}
+.intro-line span {
+    display: inline-block;
+    font-size: 40px;           /* JS fitIntroLines() 가 실제 값으로 덮어쓴다 */
+    line-height: 1;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+.intro-line span::after {      /* 마지막 글자의 자간을 빼서 정확히 가운데로 */
+    content: "";
+    margin-left: -0.02em;
+}
+.intro-line-1 { opacity: 0.1; }
+.intro-line-2 { opacity: 0.4; }
+.intro-line-3 { opacity: 0.6; }
+
+.intro-camera {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 66%;
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: cover;
+    pointer-events: none;
+}
+
+/* 하단 로고 + 날짜 */
+.intro-foot {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
 }
 .intro-logo {
     display: block;
-    width: 100%;
-    max-width: 420px;
+    width: 140px;
     height: auto;
-}
-/* 부스에서 장갑 낀 손으로도 눌리도록 크게 */
-.intro-start {
-    min-width: 260px;
-    padding: 18px 40px;
-    font-size: 19px;
-    font-weight: 600;
-    line-height: 26px;
-    border-radius: var(--r-card);
+    filter: invert(1);        /* 검은 글자 로고를 어두운 배경 위에서 흰색으로 */
 }
 .intro-date {
-    font-size: 13px;
-    color: var(--ink-mute);
-    letter-spacing: .06em;
+    font-family: var(--font);
+    font-size: 12px;
+    letter-spacing: .12em;
+    color: rgba(255, 255, 255, .45);
 }
 
-@media (max-width: 560px) {
-    .intro-inner { gap: 24px; }
-    .intro-logo { max-width: 280px; }
-    .intro-start { min-width: 0; width: 100%; }
+@media (min-width: 800px) {
+    .intro-inner { padding: clamp(28px, 7vh, 80px) 40px; }
+    .intro-mark { width: 85.16px; height: 44.70px; }
+    .intro-camera { width: 45%; }
+    .intro-logo { width: 240px; }
+    .intro-date { font-size: 13px; }
 }
 
 .select-inner {
