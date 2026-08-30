@@ -294,16 +294,20 @@ body {
     line-height: 1.5;
 }
 
-/* 색 고르기 */
+/* 색 고르기 — 좁아져도 무조건 한 줄. 색이 아래로 접히면 카드마다 높이가
+   달라져 첫 화면이 들쭉날쭉해진다. 칸이 모자라면 동그라미가 대신 줄어든다. */
 .choice-colors {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
 }
 .swatch {
     appearance: none;
+    flex: 0 1 28px;
+    min-width: 0;
     width: 28px;
-    height: 28px;
+    aspect-ratio: 1;
+    height: auto;
     padding: 0;
     border-radius: var(--r-pill);
     background: var(--sw, var(--quiet));
@@ -534,10 +538,13 @@ body {
 .intro-inner {
     position: relative;
     width: 100%;
+    /* 세로로도 화면을 꽉 채운다. 마크는 위, 헤드라인은 가운데, 로고는 아래로
+       벌려 세로가 긴 화면(폰·태블릿 세로)에서 가운데만 떠 보이지 않게. */
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     /* 화면이 낮으면 여백부터 줄여, 글자가 폭을 그대로 유지하게 */
     gap: clamp(28px, 7vh, 80px);
     padding: clamp(28px, 7vh, 80px) 24px;
@@ -560,6 +567,8 @@ body {
     position: relative;
     flex-shrink: 0;
     width: 100%;
+    /* space-between 이 위아래로 벌려도 헤드라인은 가운데 대역을 차지한다 */
+    margin: auto 0;
 }
 .intro-line {
     font-size: 0;              /* 태그 사이 공백이 가운데 정렬을 밀지 않도록 */
@@ -585,7 +594,7 @@ body {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: 66%;
+    width: 66%;                /* JS fitIntro() 가 화면 높이에 맞춰 덮어쓴다 */
     height: auto;
     aspect-ratio: 1;
     object-fit: cover;
@@ -891,6 +900,7 @@ body {
     .select-side { flex-direction: column; align-items: stretch; }
     .select-actions { width: 100%; }
     .choice-card { padding: 12px; gap: 12px; }
+    .choice-colors { gap: 6px; }
     .result-inner { gap: 24px; }
     .result-canvas-wrap { padding: 12px; }
     .qr-canvas-wrap { max-width: 220px; }

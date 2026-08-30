@@ -38,7 +38,7 @@ function showScreen(id) {
 function goToIntro() {
     stopCamera();
     showScreen('intro');
-    fitIntroLines();
+    fitIntro();
 }
 
 // 인트로는 화면 아무 데나 누르면 넘어간다.
@@ -54,9 +54,11 @@ function startBooth() {
     }
 }
 
-// 인트로 헤드라인을 화면 폭에 꽉 차게 맞춘다.
-// 줄마다 글자 수가 달라 줄 단위로 크기를 계산한다.
-function fitIntroLines() {
+// 인트로를 화면에 꽉 채운다.
+//  · 헤드라인은 가로 폭에 맞춘다. 줄마다 글자 수가 달라 줄 단위로 계산한다.
+//  · 카메라는 마크와 로고 사이에 남는 세로 대역에 맞춘다. 세로가 긴 화면
+//    (폰·태블릿 세로)에서는 폭 기준으로만 잡으면 가운데가 휑해진다.
+function fitIntro() {
     const inner = document.querySelector('#intro .intro-inner');
     const lines = document.getElementById('introLines');
     if (!inner || !lines) return;
@@ -80,6 +82,25 @@ function fitIntroLines() {
         const k = Math.max(0.4, (lh - overflow) / lh);
         fitted.forEach(f => { f.span.style.fontSize = (f.size * k) + 'px'; });
     }
+
+    fitIntroCamera(inner, lines, avail);
+}
+
+function fitIntroCamera(inner, lines, avail) {
+    const cam = document.querySelector('.intro-camera');
+    const mark = document.querySelector('.intro-mark');
+    const foot = document.querySelector('.intro-foot');
+    if (!cam || !mark || !foot) return;
+
+    const cs = getComputedStyle(inner);
+    const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const band = window.innerHeight - pad
+        - mark.getBoundingClientRect().height
+        - foot.getBoundingClientRect().height;
+
+    // 위아래 요소와 부딪히지 않게 대역의 85% 까지만, 글자 폭은 넘지 않게.
+    const size = Math.min(band * 0.85, avail * 0.9);
+    if (size > 0) cam.style.width = size + 'px';
 }
 
 // 촬영 도중 되돌아갈 때는 인트로가 아니라 프레임 선택으로 간다.
@@ -841,11 +862,11 @@ function drawQR(canvas, text) {
 
 // ===== 시작 =====
 if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(fitIntroLines);
+    document.fonts.ready.then(fitIntro);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    fitIntroLines();
+    fitIntro();
     state.dateText = todayText();
     document.querySelectorAll('#todayDate, #introDate').forEach(el => {
         el.textContent = state.dateText;
@@ -858,7 +879,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('[frames]', err);
     }
     showScreen('intro');
-    fitIntroLines();
+    fitIntro();
 
     document.getElementById('intro').addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -878,6 +899,6 @@ window.addEventListener('resize', () => {
         const select = document.getElementById('select');
         if (select && select.classList.contains('active')) updateSelection();
         const intro = document.getElementById('intro');
-        if (intro && intro.classList.contains('active')) fitIntroLines();
+        if (intro && intro.classList.contains('active')) fitIntro();
     }, 200);
 });
