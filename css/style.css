@@ -96,11 +96,27 @@ body {
     justify-content: space-between;
     gap: 12px;
 }
+/* 누르면 인트로로 돌아간다. 생김새는 원래 텍스트 그대로 두고
+   커서와 hover 색으로만 누를 수 있다는 것을 알린다. */
 .brand-mark {
+    appearance: none;
+    background: none;
+    border: 0;
+    padding: 4px 6px;
+    margin: -4px -6px;          /* 패딩만큼 되돌려 원래 자리에 붙게 */
+    font-family: inherit;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: .34em;
     color: var(--ink-sub);
+    cursor: pointer;
+    border-radius: var(--r-hover);
+    transition: color .16s ease, background .16s ease;
+}
+.brand-mark:hover { color: var(--ink); background: var(--quiet); }
+.brand-mark:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
 }
 .brand-date {
     font-size: 12px;
@@ -200,6 +216,20 @@ body {
     width: 100%;
     max-width: 1280px;
     text-align: center;
+}
+/* 제목 자리에 들어가는 로고. h1 이므로 여백은 원래 제목과 같은 리듬으로. */
+.choice-title {
+    display: flex;
+    justify-content: center;
+}
+.choice-logo {
+    display: block;
+    width: 100%;
+    max-width: 340px;
+    height: auto;
+}
+@media (max-width: 560px) {
+    .choice-logo { max-width: 220px; }
 }
 .choice-grid {
     display: grid;
